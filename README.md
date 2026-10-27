@@ -35,4 +35,4 @@ VITE_CONTACT_ENDPOINT=your_endpoint_here
 Without an endpoint the contact form stays in demo mode and provides a direct email fallback.
 
 ## Content source
-The portfolio content is based on the supplied CV/resume documents. Replace `public/assets/profile.png` with a higher-resolution portrait if desired
+The portfolio content is based on the supplied CV/resume documents. Replace `public/assets/profile.png` a higher-resolution portrait if desired
