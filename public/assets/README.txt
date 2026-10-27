@@ -1,0 +1,1 @@
+profile.png is cropped from the supplied CV. Replace it with a higher-resolution portrait anytime.
