@@ -15,7 +15,7 @@ A responsive, animation-first professional portfolio built from Rokeya Shorna's 
 - Projects, project details, experience, education, research/publications, awards, workshops, leadership, references, hobbies and resume pages
 - Print-friendly resume page
 - Contact form endpoint support through `VITE_CONTACT_ENDPOINT`
-- Reduced-motion accessibility behavior
+- Reduced-motion accessibility 
 - Vercel-ready Vite configuration
 
 ## Run
