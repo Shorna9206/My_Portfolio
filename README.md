@@ -1,4 +1,4 @@
-# Rokeya Shorna — Premium Portfolio v2
+# Rokeya Shorna — Premium Portfolio 
 
 A responsive, animation-first professional portfolio built from Rokeya Shorna's supplied CV materials.
 
