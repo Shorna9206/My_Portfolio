@@ -1,4 +1,4 @@
-export const profile = {
+export let profile = {
   name: "Rokeya Khatun Shorna",
   shortName: "Rokeya Shorna",
   role: "Researcher • Programmer • Web Developer",
@@ -18,7 +18,7 @@ export const profile = {
   ]
 };
 
-export const education = [
+export let education = [
   {
     degree: "M.Sc in Computer Science and Engineering",
     period: "November 2021 – February 2023",
@@ -35,7 +35,7 @@ export const education = [
   }
 ];
 
-export const experiences = [
+export let experiences = [
   {
     role: "Junior Programmer",
     period: "January 2024 – Present",
@@ -62,7 +62,7 @@ export const experiences = [
   }
 ];
 
-export const skills = {
+export let skills = {
   "Research": ["Systematic Literature Review", "Quantitative Data Analysis", "Qualitative Data Analysis"],
   "Languages": ["Python", "JavaScript"],
   "Web": ["HTML", "CSS", "PHP", "Bootstrap"],
@@ -70,7 +70,7 @@ export const skills = {
   "Graphics": ["Adobe Illustrator"]
 };
 
-export const projects = [
+export let projects = [
   {
     slug: "facial-expression-recognition",
     title: "Facial Expression Recognition System",
@@ -125,7 +125,7 @@ export const projects = [
   }
 ];
 
-export const publications = [
+export let publications = [
   {
     title: "Deep learning based sentiment analysis from Bangla text using glove word embedding along with convolutional neural network",
     venue: "2022 13th International Conference on Computing Communication and Networking Technologies (ICCCNT), IEEE",
@@ -140,7 +140,7 @@ export const publications = [
   }
 ];
 
-export const awards = [
+export let awards = [
   "2nd Runner Up as a team of DESTELLOS in Jobcon Logo Design Competition 2019.",
   "Certified from DIU CPC in Graphics Design, Dec 2019.",
   "Recipient of 30% waiver for excellence in results in the Bachelor's Degree program at DIU.",
@@ -151,7 +151,7 @@ export const awards = [
   "Awarded for writing contribution to the book 'Art of Living' published by DIU HRDI."
 ];
 
-export const workshops = [
+export let workshops = [
   "Industrial Attachment and Future Prospects of Engineering Students — IEEE DIU Student Branch.",
   "+Mindshift: An Empathy Camp — three-day brain boot camp.",
   "Big Data Analytics in Digital Economy: A New Paradigm of Innovation and Growth — DIU.",
@@ -161,7 +161,7 @@ export const workshops = [
   "Start your journey to be a programmer or a successful technology professional — online session."
 ];
 
-export const leadership = [
+export let leadership = [
   ["Co-Founder", "100 Million Mindset", "2019 – Present", "Promoted growth mindset philosophy and positive thinking."],
   ["Volunteer", "ALOKITO SHISHU", "2020", "Supported the Stop Violence Against Women and Children campaign."],
   ["Program Launch Organizer", "Buddhi Diye Buddhi Aki — EMK Center", "2020", "Launched a critical-thinking program with primary school students."],
@@ -172,14 +172,43 @@ export const leadership = [
   ["Member", "DIU Computer and Programming Club", "2017 – 2020", "Participated in workshops, hackathons and coding competitions."]
 ];
 
-export const references = [
+export let references = [
   ["Dr. Md. Golam Moazzam", "Professor, Department of Computer Science and Engineering, Jahangirnagar University", "khokan@juniv.edu"],
   ["Mr. Md. Ejaj-Ur-Rahaman", "Assistant Professor, Department of Business Administration, Daffodil International University", "ejaj@daffodilvarsity.edu.bd"],
   ["Mr. Md. Aynul Hasan Nahid", "Lecturer, Department of Computer Science and Engineering, Daffodil International University", "aynul.cse@diu.edu.bd"]
 ];
-export const coursework = [
+export let coursework = [
   "Data Mining", "Artificial Intelligence and Expert Systems", "Discrete Mathematics", "Software Testing",
   "Medical Imaging", "Neuroinformatics", "Parallel and Distributed Computing", "Switching and Routing Technology", "Web Design and Programming"
 ];
 
-export const hobbies = ["Writing", "Painting", "Graphics Designing"];
+export let hobbies = ["Writing", "Painting", "Graphics Designing"];
+
+
+// Allows the public site to hydrate editable content from Firestore while keeping
+// the supplied local portfolio as a safe fallback when Firebase is not configured.
+export function applyPortfolioData(remote = {}) {
+  const keys = [
+    "profile", "education", "experiences", "skills", "projects", "publications",
+    "awards", "workshops", "leadership", "references", "coursework", "hobbies"
+  ];
+  for (const key of keys) {
+    if (remote[key] !== undefined && remote[key] !== null) {
+      // ES module exports are live bindings, so importing components see the new data on rerender.
+      switch (key) {
+        case "profile": profile = remote[key]; break;
+        case "education": education = remote[key]; break;
+        case "experiences": experiences = remote[key]; break;
+        case "skills": skills = remote[key]; break;
+        case "projects": projects = remote[key]; break;
+        case "publications": publications = remote[key]; break;
+        case "awards": awards = remote[key]; break;
+        case "workshops": workshops = remote[key]; break;
+        case "leadership": leadership = remote[key]; break;
+        case "references": references = remote[key]; break;
+        case "coursework": coursework = remote[key]; break;
+        case "hobbies": hobbies = remote[key]; break;
+      }
+    }
+  }
+}

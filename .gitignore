@@ -1,1 +1,8 @@
 node_modules
+dist
+.env
+.env.*
+!.env.example
+serviceAccountKey.json
+admin-panel/node_modules
+admin-panel/dist

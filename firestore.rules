@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public portfolio content can be read by visitors. Only a trusted admin claim can publish edits.
+    match /portfolioContent/{documentId} {
+      allow read: if documentId == 'main';
+      allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+    // Deny all other client access by default.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
