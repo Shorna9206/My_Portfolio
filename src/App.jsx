@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { applyPortfolioData } from "./data/portfolio";
 import { Routes, Route, useLocation, Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Download, Mail, MapPin, Github, Linkedin, ExternalLink, Award, Users, BookOpen, BriefcaseBusiness } from "lucide-react";
@@ -14,6 +15,25 @@ import MagneticButton from "./components/MagneticButton";
 import ProjectCard from "./components/ProjectCard";
 import ThreeOrb from "./components/ThreeOrb";
 import { profile, education, experiences, skills, projects, publications, awards, workshops, leadership, references, coursework, hobbies } from "./data/portfolio";
+
+function PortfolioContentSync({ onUpdate }) {
+  useEffect(() => {
+    let unsubscribe;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { firebaseConfigured, db } = await import("./lib/firebase");
+        if (!firebaseConfigured || !db || cancelled) return;
+        const { doc, onSnapshot } = await import("firebase/firestore");
+        unsubscribe = onSnapshot(doc(db, "portfolioContent", "main"), (snapshot) => {
+          if (snapshot.exists()) { applyPortfolioData(snapshot.data()); onUpdate(); }
+        }, (error) => console.error("Portfolio content sync failed:", error));
+      } catch (error) { console.warn("Firebase content sync is not configured yet:", error); }
+    })();
+    return () => { cancelled = true; if (unsubscribe) unsubscribe(); };
+  }, [onUpdate]);
+  return null;
+}
 
 function Layout({theme, setTheme}) {
   const location = useLocation();
@@ -307,7 +327,11 @@ function NotFound() {
 }
 
 export default function App() {
+  const [, setContentVersion] = useState(0);
+  const notifyRef = useRef(() => {});
+  notifyRef.current = () => setContentVersion((v) => v + 1);
+  const stableNotify = useRef((...args) => notifyRef.current(...args)).current;
   const [theme,setTheme] = useState(localStorage.getItem("theme") || "dark");
   useEffect(()=>{ document.documentElement.dataset.theme = theme; localStorage.setItem("theme",theme); },[theme]);
-  return <Layout theme={theme} setTheme={setTheme}/>;
+  return <><PortfolioContentSync onUpdate={stableNotify}/><Layout theme={theme} setTheme={setTheme}/></>;
 }

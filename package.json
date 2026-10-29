@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:admin": "npm --prefix admin-panel run dev",
+    "build:admin": "npm --prefix admin-panel run build",
+    "set-admin": "node scripts/setAdmin.cjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
@@ -18,10 +21,12 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.1",
-    "three": "^0.179.1"
+    "three": "^0.179.1",
+    "firebase": "^11.10.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.2",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "firebase-admin": "^13.5.0"
   }
 }
