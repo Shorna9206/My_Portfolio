@@ -1,4 +1,4 @@
-# Rokeya Shorna — Premium Portfolio 
+# Rokeya Shorna — Premium Portfolio v2
 
 A responsive, animation-first professional portfolio built from Rokeya Shorna's supplied CV materials.
 
@@ -35,4 +35,9 @@ VITE_CONTACT_ENDPOINT=your_endpoint_here
 Without an endpoint the contact form stays in demo mode and provides a direct email fallback.
 
 ## Content source
+The portfolio content is based on the supplied CV/resume documents. Replace `public/assets/profile.png` with a higher-resolution portrait if desired.
 
+
+## Full-stack admin panel
+
+See [ADMIN-SETUP.md](./ADMIN-SETUP.md) for Firebase Auth/Firestore setup, admin claim provisioning, separate Vercel deployments, and secure Cloudinary image uploads. Keep server-only Cloudinary credentials and Firebase service-account JSON out of browser `VITE_` variables and version control.

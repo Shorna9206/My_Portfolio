@@ -78,14 +78,23 @@ function Counter({ to, suffix = "" }) {
   return <strong>{isFloat ? val.toFixed(2) : Math.round(val)}{suffix}</strong>;
 }
 
+function resultNumber(entry) {
+  const match = String(entry?.result ?? "").match(/[0-9]+(?:\.[0-9]+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
 function Home() {
+  const bachelors = education.find(item => /b\.sc|bachelor/i.test(item.degree));
+  const masters = education.find(item => /m\.sc|master/i.test(item.degree));
+  const currentExperience = experiences[0];
+  const researchFocus = (profile.interests || []).slice(0, 2).join(" & ") || "Research & Development";
   return <div>
     <section className="hero">
       <motion.div className="hero-grid" animate={{ opacity: [0.15, 0.3, 0.15] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}/>
       <motion.div className="hero-glow" animate={{ scale: [1, 1.15, 1], x: [0, 20, 0], y: [0, 15, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}/>
       <div className="container hero-inner">
         <div className="hero-copy">
-          <motion.span className="eyebrow hero-eyebrow" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:.6,ease:"easeOut"}}>RESEARCHER • PROGRAMMER • WEB DEVELOPER</motion.span>
+          <motion.span className="eyebrow hero-eyebrow" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:.6,ease:"easeOut"}}>{profile.role || "RESEARCHER • PROGRAMMER • WEB DEVELOPER"}</motion.span>
           <motion.h1
             initial="hidden" animate="show"
             variants={{ hidden:{}, show:{ transition:{ staggerChildren:0.14, delayChildren:0.15 } } }}
@@ -97,25 +106,25 @@ function Home() {
           <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.6,delay:.7,ease:"easeOut"}}>{profile.summary}</motion.p>
           <motion.div className="hero-actions" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.6,delay:.85,ease:"easeOut"}}><MagneticButton to="/projects">Explore Work <ArrowUpRight size={15}/></MagneticButton><MagneticButton to="/resume" secondary>View Resume <Download size={15}/></MagneticButton></motion.div>
           <motion.div className="hero-mini-stats" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.6,delay:1,ease:"easeOut"}}>
-            <div><Counter to={3.90}/><span>B.Sc CGPA</span></div><div><Counter to={3.78}/><span>M.Sc CGPA</span></div><div><Counter to={4} suffix="+"/><span>Roles & experiences</span></div>
+            <div><Counter to={resultNumber(bachelors)}/><span>B.Sc CGPA</span></div><div><Counter to={resultNumber(masters)}/><span>M.Sc CGPA</span></div><div><Counter to={experiences.length} suffix="+"/><span>Roles & experiences</span></div>
           </motion.div>
         </div>
         <div className="hero-visual" data-reveal="right">
           <motion.div className="portrait-card" animate={{ y: [0, -14, 0], rotate: [2, -1, 2] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
             <div className="portrait-glow"/>
-            <img src="/assets/profile.png" alt="Rokeya Shorna"/>
-            <div className="portrait-meta"><span>ROKEYA SHORNA</span><small>AI • WEB • RESEARCH</small></div>
+            <img src="/assets/profile.png" alt={profile.shortName || profile.name || "Portfolio profile"}/>
+            <div className="portrait-meta"><span>{(profile.shortName || profile.name || "ROKEYA SHORNA").toUpperCase()}</span><small>{profile.role || "AI • WEB • RESEARCH"}</small></div>
           </motion.div>
           <div className="visual-orb" data-parallax="-40"><ThreeOrb/></div>
           <motion.span className="orb-label" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}>SCROLL / EXPLORE</motion.span>
         </div>
       </div>
-      <div className="container hero-bottom"><motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>SCROLL TO EXPLORE ↓</motion.span><span>DHAKA • BANGLADESH</span></div>
+      <div className="container hero-bottom"><motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>SCROLL TO EXPLORE ↓</motion.span><span>{(profile.location || "Dhaka, Bangladesh").toUpperCase()}</span></div>
     </section>
     <section className="statement section-pad"><div className="container statement-grid"><span className="eyebrow">01 / PROFILE</span><h2 data-reveal>I work at the intersection of <em>research, code and design.</em></h2></div></section>
     <section className="section-pad quick-profile"><div className="container quick-grid">
-      <article data-reveal="left"><BriefcaseBusiness/><span>CURRENT ROLE</span><h3>Junior Programmer</h3><p>GIS-based development for the Rural Road Master Plan under RCIP, LGED funded by ADB.</p></article>
-      <article data-reveal="up"><BookOpen/><span>RESEARCH FOCUS</span><h3>AI & Pattern Recognition</h3><p>Digital image processing, pattern recognition, artificial intelligence and machine learning.</p></article>
+      <article data-reveal="left"><BriefcaseBusiness/><span>CURRENT ROLE</span><h3>{currentExperience?.role || "Professional Experience"}</h3><p>{currentExperience?.description || currentExperience?.organization || "Professional experience and current responsibilities."}</p></article>
+      <article data-reveal="up"><BookOpen/><span>RESEARCH FOCUS</span><h3>{researchFocus}</h3><p>{(profile.interests || []).join(", ") || "Research, development and applied technology."}</p></article>
       <article data-reveal="right"><Award/><span>PUBLICATIONS</span><h3>IEEE + Research</h3><p>Published work includes Bangla sentiment analysis and combined regression methods for rainfall measurement.</p></article>
     </div></section>
     <section className="feature section-pad"><div className="container">
@@ -191,8 +200,8 @@ function About() {
         transition={{ type: "spring", stiffness: 120, damping: 14 }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        <img src="/assets/profile.png" alt="Rokeya Shorna"/>
-        <div><span>ROKEYA SHORNA</span><small>Computer Science & Engineering</small></div>
+        <img src="/assets/profile.png" alt={profile.shortName || profile.name || "Portfolio profile"}/>
+        <div><span>{(profile.shortName || profile.name || "ROKEYA SHORNA").toUpperCase()}</span><small>{profile.role || "Computer Science & Engineering"}</small></div>
       </motion.div>
     </motion.div>
     <div><span className="eyebrow">PROFILE</span><h2 className="about-big" data-reveal>Building useful systems with <em>research-led thinking.</em></h2><p className="large-muted" data-reveal>{profile.summary}</p><TagList items={profile.interests} className="interest-list"/></div>

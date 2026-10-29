@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
-import { Activity, BookOpen, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, RefreshCw, Save, ShieldCheck, Sparkles, Users, Wrench } from "lucide-react";
+import { Activity, BookOpen, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, RefreshCw, Save, ShieldCheck, Sparkles, Users, Wrench, Upload, Copy } from "lucide-react";
 import * as defaults from "../../src/data/portfolio.js";
 import { auth, db, configured } from "./firebase";
 
@@ -35,6 +35,9 @@ export default function AdminApp() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [lastSaved, setLastSaved] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState("");
+  const [uploadError, setUploadError] = useState("");
   const selected = SECTIONS.find(s => s.key === active) || SECTIONS[0];
 
   useEffect(() => {
@@ -89,6 +92,42 @@ export default function AdminApp() {
     } catch (e) { setError(`Save failed: ${e.message}`); }
     finally { setBusy(false); }
   }
+  async function uploadImage(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setUploadError(""); setUploadedUrl(""); setError(""); setMessage("");
+    if (!file.type.startsWith("image/")) { setUploadError("Choose an image file (PNG, JPG, WEBP, etc.)."); return; }
+    if (file.size > 10 * 1024 * 1024) { setUploadError("Image must be 10 MB or smaller."); return; }
+    setUploading(true);
+    try {
+      const idToken = await user.getIdToken();
+      const signedResponse = await fetch("/api/cloudinary-signature", {
+        method: "POST", headers: { Authorization: `Bearer ${idToken}` }
+      });
+      const signed = await signedResponse.json();
+      if (!signedResponse.ok) throw new Error(signed.error || "Could not authorize image upload.");
+      const body = new FormData();
+      body.append("file", file);
+      body.append("api_key", signed.apiKey);
+      body.append("timestamp", String(signed.timestamp));
+      body.append("folder", signed.folder);
+      body.append("signature", signed.signature);
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/image/upload`, { method: "POST", body });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message || "Cloudinary upload failed.");
+      setUploadedUrl(result.secure_url || "");
+      setMessage("Image uploaded. Copy its secure URL into the image field in the JSON editor, then save changes.");
+    } catch (e) {
+      setUploadError(e.message || "Image upload failed.");
+    } finally { setUploading(false); }
+  }
+
+  async function copyUploadedUrl() {
+    try { await navigator.clipboard.writeText(uploadedUrl); setMessage("Image URL copied. Paste it into the relevant image field."); }
+    catch { setUploadError("Clipboard access was blocked. Select and copy the URL manually."); }
+  }
+
   async function seedAll() {
     const ok = window.confirm("Publish the portfolio's bundled default content to Firestore? This overwrites all editable sections with the current source values.");
     if (!ok) return;
@@ -106,7 +145,11 @@ export default function AdminApp() {
     <main className="main-area" id="top"><header className="topbar"><div><span className="eyebrow">CONTENT MANAGEMENT / LIVE</span><h1>{selected.label}</h1></div><div className="top-actions"><a className="ghost-btn" href={import.meta.env.VITE_PUBLIC_SITE_URL || "https://example.com"} target="_blank" rel="noreferrer"><ExternalLink size={15}/> View website</a><span className="status-pill"><i/> Connected</span></div></header>
     <section className="welcome-row"><div><p className="welcome-kicker">YOUR PORTFOLIO, YOUR STORY</p><h2>Good to see you again.</h2><p className="muted">Edit content here. Published changes sync to the public website through Firestore.</p></div><div className="welcome-icon"><Sparkles size={23}/></div></section>
     <section className="stats-grid">{stats.map(([label,value],i)=><div className="stat-card" key={label}><span>{label}</span><strong>{value}</strong><small>{i===3?"Editable areas":"Currently published"}</small></div>)}</section>
-    <section className="editor-card"><div className="editor-heading"><div><span className="eyebrow">CONTENT EDITOR</span><h2>{selected.label}</h2><p>{selected.description}</p></div><div className="editor-badge"><FileText size={15}/> JSON editor</div></div><div className="editor-tools"><span><i className="live-dot"/> Editing <b>{selected.key}</b></span><button className="ghost-btn" onClick={()=>setDraft(pretty(content[active] ?? fallback[active]))}><RefreshCw size={14}/> Reset draft</button></div><textarea className="code-editor" spellCheck="false" value={draft} onChange={e=>setDraft(e.target.value)} aria-label={`${selected.label} JSON editor`}/><div className="editor-footer"><span className="muted">Use valid JSON. Keep the existing field names to preserve the public layout.</span><button className="primary-btn" disabled={busy} onClick={saveSection}><Save size={16}/>{busy?"Saving…":"Save changes"}</button></div>{error && <div className="notice error">{error}</div>}{message && <div className="notice success"><Check size={16}/>{message}</div>}</section>
+    <section className="editor-card"><div className="editor-heading"><div><span className="eyebrow">CONTENT EDITOR</span><h2>{selected.label}</h2><p>{selected.description}</p></div><div className="editor-badge"><FileText size={15}/> JSON editor</div></div><div className="editor-tools"><span><i className="live-dot"/> Editing <b>{selected.key}</b></span><button className="ghost-btn" onClick={()=>setDraft(pretty(content[active] ?? fallback[active]))}><RefreshCw size={14}/> Reset draft</button></div>
+    <div className="upload-panel"><div><strong><Upload size={15}/> Cloudinary image upload</strong><p>Upload a portfolio image securely (max 10 MB). Then copy the secure URL into the image field in this section's JSON.</p></div><label className="ghost-btn upload-label"><Upload size={14}/>{uploading ? "Uploading…" : "Choose image"}<input type="file" accept="image/*" onChange={uploadImage} disabled={uploading} hidden/></label></div>
+    {uploadedUrl && <div className="uploaded-url"><input aria-label="Uploaded image URL" readOnly value={uploadedUrl}/><button className="ghost-btn" onClick={copyUploadedUrl}><Copy size={14}/> Copy URL</button></div>}
+    {uploadError && <div className="notice error">{uploadError}</div>}
+    <textarea className="code-editor" spellCheck="false" value={draft} onChange={e=>setDraft(e.target.value)} aria-label={`${selected.label} JSON editor`}/><div className="editor-footer"><span className="muted">Use valid JSON. Keep the existing field names to preserve the public layout.</span><button className="primary-btn" disabled={busy} onClick={saveSection}><Save size={16}/>{busy?"Saving…":"Save changes"}</button></div>{error && <div className="notice error">{error}</div>}{message && <div className="notice success"><Check size={16}/>{message}</div>}</section>
     <section className="bottom-grid"><div className="info-card"><div className="info-icon"><ShieldCheck size={18}/></div><div><h3>Secure by design</h3><p>Admin access requires a Firebase custom claim. Firestore rules must also enforce that claim before accepting writes.</p></div></div><div className="info-card"><div className="info-icon"><RefreshCw size={18}/></div><div><h3>Live publishing</h3><p>The public site listens to <code>portfolioContent/main</code> and updates when saved changes arrive.</p></div></div></section>
     <div className="danger-zone"><div><h3>Initial publishing</h3><p>Use this once to create the main Firestore document from the portfolio's existing local content.</p></div><button className="ghost-btn" disabled={busy} onClick={seedAll}>Publish default content</button></div>
     <footer className="admin-footer">© {new Date().getFullYear()} Rokeya Shorna · Private content studio <span>SECURE WORKSPACE</span></footer></main></div>;

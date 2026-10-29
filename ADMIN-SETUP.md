@@ -25,7 +25,7 @@ Copy root `.env.example` to `.env` and fill in the Firebase Web App values. Copy
 Download a service-account private key from Firebase Console → Project settings → Service accounts. Save it locally as `serviceAccountKey.json` in the repository root. Never commit or upload this file. Then run:
 
 ```bash
-npm install firebase-admin
+npm install
 node scripts/setAdmin.cjs admin@example.com
 ```
 
@@ -65,4 +65,19 @@ For the admin Vercel project, set `VITE_PUBLIC_SITE_URL` to the public portfolio
 - Admin permissions are enforced twice: the panel checks the Firebase ID token claim and Firestore rules require `request.auth.token.admin == true` for writes. Hiding the panel alone is not security.
 - `firestore.rules` denies client access to all other collections. If the Firebase project already has rules for other features, merge these rules rather than blindly replacing unrelated rules.
 - The editor intentionally uses JSON for each section so all existing content fields can be edited without losing fields the UI does not yet expose. Invalid JSON is rejected before saving.
+
+## 7. Secure Cloudinary image uploads
+
+The admin panel includes an image upload control. It uploads images into the `apu-portfolio` Cloudinary folder and returns a `secure_url` to copy into the relevant JSON image field. The server-side signing endpoint lives at `admin-panel/api/cloudinary-signature.js`; it verifies the Firebase ID token and requires the `admin: true` custom claim before signing an upload. The Cloudinary API secret is never sent to the browser.
+
+For the **admin Vercel project only**, add these server-side environment variables in Project Settings → Environment Variables:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` — the complete Firebase service-account JSON as a single environment-variable value.
+
+Do not prefix these secrets with `VITE_`, do not put them in the public site's environment, and never commit a service-account key. Redeploy the admin project after setting them. The image-upload API is intended for the deployed Vercel admin project; local Vite dev does not run Vercel serverless functions by itself, so upload testing should be done after deployment or via Vercel's local dev tooling.
+
+The uploader enforces image MIME type and a 10 MB client-side size limit. Configure Cloudinary account upload limits as an additional safeguard.
 - Image fields currently accept image URLs (including Cloudinary URLs). Upload widgets/signing endpoints are not configured in this starter; use a secured upload endpoint before adding private Cloudinary credentials.
