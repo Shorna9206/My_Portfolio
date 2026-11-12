@@ -10,11 +10,11 @@ The admin panel edits the Firestore document `portfolioContent/main`. The public
 ## 1. Firebase project
 
 1. Open Firebase Console and use/create the Firebase project for this portfolio.
-2. Enable **Authentication → Sign-in method → Email/Password**.
+2. Enable **Authentication → Sign-in method → Email/Password** and **Google**. Configure the authorized domains for your admin deployment in Authentication → Settings → Authorized domains. Password reset uses Firebase’s built-in email action; configure its sender/template in Authentication → Templates.
 3. Create the administrator account in **Authentication → Users → Add user**.
 4. Add a Firebase Web App and copy its config values.
 5. Create Firestore Database.
-6. Deploy `firestore.rules` from this repository (Firebase CLI: `firebase deploy --only firestore:rules`, after `firebase login` and `firebase use <project-id>`).
+6. Deploy `firestore.rules` from this repository (Firebase CLI: `npx firebase-tools deploy --only firestore:rules`, after `npx firebase-tools login` and `npx firebase-tools use <project-id>`).
 
 ## 2. Environment variables
 
@@ -29,7 +29,7 @@ npm install
 node scripts/setAdmin.cjs admin@example.com
 ```
 
-The email must already exist in Firebase Authentication. The script preserves any existing custom claims and adds `admin: true`. Sign out and sign back in after running it. Remove the service account JSON from your machine when you no longer need it.
+The email must already exist in Firebase Authentication. The script preserves any existing custom claims and adds `admin: true`. This applies to both email/password and Google-created accounts. Sign out and sign back in after running it. Remove the service account JSON from your machine when you no longer need it.
 
 ## 4. Run locally
 
@@ -79,5 +79,4 @@ For the **admin Vercel project only**, add these server-side environment variabl
 
 Do not prefix these secrets with `VITE_`, do not put them in the public site's environment, and never commit a service-account key. Redeploy the admin project after setting them. The image-upload API is intended for the deployed Vercel admin project; local Vite dev does not run Vercel serverless functions by itself, so upload testing should be done after deployment or via Vercel's local dev tooling.
 
-The uploader enforces image MIME type and a 10 MB client-side size limit. Configure Cloudinary account upload limits as an additional safeguard.
-- Image fields currently accept image URLs (including Cloudinary URLs). Upload widgets/signing endpoints are not configured in this starter; use a secured upload endpoint before adding private Cloudinary credentials.
+The uploader enforces image MIME type and a 10 MB client-side size limit. Configure Cloudinary account upload limits as an additional safeguard. In local development, Vite does not execute the Vercel serverless signing function; test image uploads on the deployed Admin project or run it with the Vercel CLI (`vercel dev`).

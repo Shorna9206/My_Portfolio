@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
+import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, signOut } from "firebase/auth";
+import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { Activity, BookOpen, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, RefreshCw, Save, ShieldCheck, Sparkles, Users, Wrench, Upload, Copy } from "lucide-react";
 import * as defaults from "../../src/data/portfolio.js";
 import { auth, db, configured } from "./firebase";
@@ -73,10 +73,32 @@ export default function AdminApp() {
 
   function selectSection(key) { setActive(key); setDraft(pretty(content[key] ?? fallback[key])); setMessage(""); setError(""); }
   async function login(e) {
-    e.preventDefault(); setBusy(true); setError("");
+    e.preventDefault(); setBusy(true); setError(""); setMessage("");
     try { await signInWithEmailAndPassword(auth, email.trim(), password); setPassword(""); }
-    catch (e) { setError(e.code === "auth/invalid-credential" ? "Email or password is incorrect." : e.message); }
+    catch (e) { setError(e.code === "auth/invalid-credential" || e.code === "auth/wrong-password" || e.code === "auth/user-not-found" ? "Email or password is incorrect." : e.message); }
     finally { setBusy(false); }
+  }
+
+  async function googleLogin() {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      setError(e.code === "auth/popup-closed-by-user" ? "Google sign-in was cancelled." : (e.message || "Google sign-in failed."));
+    } finally { setBusy(false); }
+  }
+
+  async function resetPassword() {
+    if (!email.trim()) { setError("Enter your administrator email first, then choose Forgot password."); return; }
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setMessage("Password reset email sent. Check your inbox and spam folder.");
+    } catch (e) {
+      setError(e.code === "auth/user-not-found" ? "No administrator account was found for that email." : (e.message || "Could not send the reset email."));
+    } finally { setBusy(false); }
   }
   async function saveSection() {
     setError(""); setMessage("");
@@ -139,7 +161,7 @@ export default function AdminApp() {
 
   if (!configured) return <div className="setup-screen"><div className="setup-card"><div className="brand-mark">RS</div><p className="eyebrow">ADMIN SETUP REQUIRED</p><h1>Connect Firebase first.</h1><p>Add the Firebase web app values to <code>admin-panel/.env</code> and the public site's root <code>.env</code>. See <code>ADMIN-SETUP.md</code>.</p></div></div>;
   if (!authReady) return <div className="loading-screen"><div className="spinner"/> Verifying session…</div>;
-  if (!user || !authorized) return <div className="login-screen"><div className="login-art"><div className="orb orb-one"/><div className="orb orb-two"/><div className="login-copy"><span className="eyebrow">ROKEYA SHORNA / DIGITAL SPACE</span><h1>Make your work<br/><em>tell its story.</em></h1><p>A private workspace to keep your portfolio accurate, current and entirely yours.</p><div className="login-foot"><ShieldCheck size={15}/> Protected by Firebase Authentication + admin claims</div></div></div><form className="login-card" onSubmit={login}><div className="brand-mark">RS</div><span className="eyebrow">CONTENT STUDIO</span><h2>Welcome back.</h2><p className="muted">Sign in with your authorized administrator account.</p><label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password"/></label>{error && <div className="notice error">{error}</div>}<button className="primary-btn full" disabled={busy}>{busy ? "Signing in…" : "Sign in securely"}<ChevronRight size={17}/></button><p className="login-note">Access is restricted to accounts with the Firebase <code>admin: true</code> custom claim.</p></form></div>;
+  if (!user || !authorized) return <div className="login-screen"><div className="login-art"><div className="orb orb-one"/><div className="orb orb-two"/><div className="login-copy"><span className="eyebrow">ROKEYA SHORNA / DIGITAL SPACE</span><h1>Make your work<br/><em>tell its story.</em></h1><p>A private workspace to keep your portfolio accurate, current and entirely yours.</p><div className="login-foot"><ShieldCheck size={15}/> Protected by Firebase Authentication + admin claims</div></div></div><form className="login-card" onSubmit={login}><div className="brand-mark">RS</div><span className="eyebrow">CONTENT STUDIO</span><h2>Welcome back.</h2><p className="muted">Sign in with your authorized administrator account.</p><label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password"/></label><button type="button" className="text-action" onClick={resetPassword} disabled={busy}>Forgot password?</button>{error && <div className="notice error">{error}</div>}{message && <div className="notice success">{message}</div>}<button className="primary-btn full" disabled={busy}>{busy ? "Signing in…" : "Sign in securely"}<ChevronRight size={17}/></button><div className="login-divider"><span>OR</span></div><button type="button" className="ghost-btn full google-login" disabled={busy} onClick={googleLogin}><b>G</b> Continue with Google</button><p className="login-note">Access is restricted to accounts with the Firebase <code>admin: true</code> custom claim. Google accounts must also be granted this claim.</p></form></div>;
 
   return <div className="admin-shell"><aside className="sidebar"><a className="brand" href="#top"><span className="brand-mark">RS</span><span><b>SHORNA</b><small>PORTFOLIO STUDIO</small></span></a><div className="side-label">WORKSPACE</div><button className={`nav-item ${active === "dashboard" ? "active" : ""}`} onClick={()=>selectSection("profile")}><LayoutDashboard size={17}/> Overview</button><div className="side-label">CONTENT MANAGEMENT</div>{SECTIONS.map(item=>{const Icon=item.icon;return <button key={item.key} className={`nav-item ${active===item.key?"active":""}`} onClick={()=>selectSection(item.key)}><Icon size={17}/><span>{item.label}</span>{active===item.key&&<span className="nav-dot"/>}</button>})}<div className="sidebar-bottom"><div className="user-chip"><span className="avatar">{(user.email||"A")[0].toUpperCase()}</span><span><b>{user.email}</b><small>Administrator</small></span></div><button className="nav-item logout" onClick={()=>signOut(auth)}><LogOut size={17}/> Sign out</button></div></aside>
     <main className="main-area" id="top"><header className="topbar"><div><span className="eyebrow">CONTENT MANAGEMENT / LIVE</span><h1>{selected.label}</h1></div><div className="top-actions"><a className="ghost-btn" href={import.meta.env.VITE_PUBLIC_SITE_URL || "https://example.com"} target="_blank" rel="noreferrer"><ExternalLink size={15}/> View website</a><span className="status-pill"><i/> Connected</span></div></header>

@@ -9,6 +9,6 @@ const config = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
-export const firebaseConfigured = Boolean(config.apiKey && config.projectId && config.appId);
+export const firebaseConfigured = Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
 export const firebaseApp = firebaseConfigured ? (getApps()[0] || initializeApp(config)) : null;
 export const db = firebaseApp ? getFirestore(firebaseApp) : null;

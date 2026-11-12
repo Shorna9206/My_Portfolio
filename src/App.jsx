@@ -298,11 +298,12 @@ function Contact() {
     if (endpoint) {
       setStatus("Sending…");
       try {
-        await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+        const response = await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+        if (!response.ok) throw new Error(`Contact endpoint returned ${response.status}`);
         setStatus("Message sent successfully.");
         e.currentTarget.reset();
       } catch {
-        setStatus("Something went wrong. Opening your email client instead…");
+        setStatus("Message could not be delivered by the form. Opening your email client instead…");
         openMailFallback(data);
       }
     } else {
