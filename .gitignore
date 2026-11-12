@@ -6,3 +6,8 @@ dist
 serviceAccountKey.json
 admin-panel/node_modules
 admin-panel/dist
+backend/node_modules
+backend/.env
+backend/.env.*
+!backend/.env.example
+npm-debug.log*

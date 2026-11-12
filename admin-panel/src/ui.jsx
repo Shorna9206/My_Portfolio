@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, signOut } from "firebase/auth";
-import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { Activity, BookOpen, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, RefreshCw, Save, ShieldCheck, Sparkles, Users, Wrench, Upload, Copy } from "lucide-react";
 import * as defaults from "../../src/data/portfolio.js";
-import { auth, db, configured } from "./firebase";
+import { auth, configured } from "./firebase";
+
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
+async function apiRequest(path, options = {}, currentUser) {
+  const token = currentUser ? await currentUser.getIdToken() : "";
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) } });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || `API request failed (${response.status})`);
+  return payload;
+}
 
 const SECTIONS = [
   { key: "profile", label: "Profile & Contact", icon: CircleUserRound, type: "object", description: "Name, title, contact details, social links and introduction." },
@@ -54,17 +62,18 @@ export default function AdminApp() {
   }, []);
 
   useEffect(() => {
-    if (!authorized || !db) return;
-    return onSnapshot(doc(db, "portfolioContent", "main"), snap => {
-      if (snap.exists()) {
-        const remote = snap.data();
-        const next = { ...fallback, ...remote };
-        setContent(next); setDraft(pretty(next[active])); setLastSaved(remote.updatedAt?.toDate?.() || null);
-      } else {
-        setContent(fallback); setDraft(pretty(fallback[active]));
-      }
-    }, e => setError(`Could not load content: ${e.message}`));
-  }, [authorized, active]);
+    if (!authorized) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await apiRequest("/api/portfolio", {}, user);
+        if (cancelled) return;
+        const next = { ...fallback, ...(remote.content || {}) };
+        setContent(next); setDraft(pretty(next[active])); setLastSaved(remote.updatedAt ? new Date(remote.updatedAt) : null);
+      } catch (e) { if (!cancelled) setError(`Could not load content: ${e.message}`); }
+    })();
+    return () => { cancelled = true; };
+  }, [authorized, active, user]);
 
   const stats = useMemo(() => [
     ["Projects", (content.projects || []).length], ["Experiences", (content.experiences || []).length],
@@ -109,8 +118,8 @@ export default function AdminApp() {
     setBusy(true);
     try {
       const next = { ...content, [active]: parsed };
-      await setDoc(doc(db, "portfolioContent", "main"), { ...next, updatedAt: serverTimestamp(), updatedBy: user.email }, { merge: true });
-      setContent(next); setDraft(pretty(parsed)); setMessage(`${selected.label} saved. The public portfolio will update automatically.`);
+      const saved = await apiRequest("/api/portfolio", { method: "PUT", body: JSON.stringify({ content: next }) }, user);
+      setContent(saved.content || next); setDraft(pretty(parsed)); setLastSaved(saved.updatedAt ? new Date(saved.updatedAt) : new Date()); setMessage(`${selected.label} saved. The public portfolio will refresh automatically.`);
     } catch (e) { setError(`Save failed: ${e.message}`); }
     finally { setBusy(false); }
   }
@@ -124,7 +133,7 @@ export default function AdminApp() {
     setUploading(true);
     try {
       const idToken = await user.getIdToken();
-      const signedResponse = await fetch("/api/cloudinary-signature", {
+      const signedResponse = await fetch(`${API_URL}/api/media/signature`, {
         method: "POST", headers: { Authorization: `Bearer ${idToken}` }
       });
       const signed = await signedResponse.json();
@@ -151,28 +160,28 @@ export default function AdminApp() {
   }
 
   async function seedAll() {
-    const ok = window.confirm("Publish the portfolio's bundled default content to Firestore? This overwrites all editable sections with the current source values.");
+    const ok = window.confirm("Publish the portfolio bundled default content to the API database? This overwrites all editable sections with the current source values.");
     if (!ok) return;
     setBusy(true); setError("");
-    try { await setDoc(doc(db, "portfolioContent", "main"), { ...fallback, updatedAt: serverTimestamp(), updatedBy: user.email }); setMessage("Default portfolio content published to Firestore."); }
+    try { await apiRequest("/api/portfolio", { method: "PUT", body: JSON.stringify({ content: fallback }) }, user); setContent(fallback); setDraft(pretty(fallback[active])); setMessage("Default portfolio content published to MongoDB."); }
     catch (e) { setError(`Publish failed: ${e.message}`); }
     finally { setBusy(false); }
   }
 
-  if (!configured) return <div className="setup-screen"><div className="setup-card"><div className="brand-mark">RS</div><p className="eyebrow">ADMIN SETUP REQUIRED</p><h1>Connect Firebase first.</h1><p>Add the Firebase web app values to <code>admin-panel/.env</code> and the public site's root <code>.env</code>. See <code>ADMIN-SETUP.md</code>.</p></div></div>;
+  if (!configured) return <div className="setup-screen"><div className="setup-card"><div className="brand-mark">RS</div><p className="eyebrow">ADMIN SETUP REQUIRED</p><h1>Connect Firebase Authentication first.</h1><p>Add Firebase web app values and VITE_API_URL to both frontend environment files. Configure the backend secrets in backend/.env. See README.md.</p></div></div>;
   if (!authReady) return <div className="loading-screen"><div className="spinner"/> Verifying session…</div>;
   if (!user || !authorized) return <div className="login-screen"><div className="login-art"><div className="orb orb-one"/><div className="orb orb-two"/><div className="login-copy"><span className="eyebrow">ROKEYA SHORNA / DIGITAL SPACE</span><h1>Make your work<br/><em>tell its story.</em></h1><p>A private workspace to keep your portfolio accurate, current and entirely yours.</p><div className="login-foot"><ShieldCheck size={15}/> Protected by Firebase Authentication + admin claims</div></div></div><form className="login-card" onSubmit={login}><div className="brand-mark">RS</div><span className="eyebrow">CONTENT STUDIO</span><h2>Welcome back.</h2><p className="muted">Sign in with your authorized administrator account.</p><label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password"/></label><button type="button" className="text-action" onClick={resetPassword} disabled={busy}>Forgot password?</button>{error && <div className="notice error">{error}</div>}{message && <div className="notice success">{message}</div>}<button className="primary-btn full" disabled={busy}>{busy ? "Signing in…" : "Sign in securely"}<ChevronRight size={17}/></button><div className="login-divider"><span>OR</span></div><button type="button" className="ghost-btn full google-login" disabled={busy} onClick={googleLogin}><b>G</b> Continue with Google</button><p className="login-note">Access is restricted to accounts with the Firebase <code>admin: true</code> custom claim. Google accounts must also be granted this claim.</p></form></div>;
 
   return <div className="admin-shell"><aside className="sidebar"><a className="brand" href="#top"><span className="brand-mark">RS</span><span><b>SHORNA</b><small>PORTFOLIO STUDIO</small></span></a><div className="side-label">WORKSPACE</div><button className={`nav-item ${active === "dashboard" ? "active" : ""}`} onClick={()=>selectSection("profile")}><LayoutDashboard size={17}/> Overview</button><div className="side-label">CONTENT MANAGEMENT</div>{SECTIONS.map(item=>{const Icon=item.icon;return <button key={item.key} className={`nav-item ${active===item.key?"active":""}`} onClick={()=>selectSection(item.key)}><Icon size={17}/><span>{item.label}</span>{active===item.key&&<span className="nav-dot"/>}</button>})}<div className="sidebar-bottom"><div className="user-chip"><span className="avatar">{(user.email||"A")[0].toUpperCase()}</span><span><b>{user.email}</b><small>Administrator</small></span></div><button className="nav-item logout" onClick={()=>signOut(auth)}><LogOut size={17}/> Sign out</button></div></aside>
     <main className="main-area" id="top"><header className="topbar"><div><span className="eyebrow">CONTENT MANAGEMENT / LIVE</span><h1>{selected.label}</h1></div><div className="top-actions"><a className="ghost-btn" href={import.meta.env.VITE_PUBLIC_SITE_URL || "https://example.com"} target="_blank" rel="noreferrer"><ExternalLink size={15}/> View website</a><span className="status-pill"><i/> Connected</span></div></header>
-    <section className="welcome-row"><div><p className="welcome-kicker">YOUR PORTFOLIO, YOUR STORY</p><h2>Good to see you again.</h2><p className="muted">Edit content here. Published changes sync to the public website through Firestore.</p></div><div className="welcome-icon"><Sparkles size={23}/></div></section>
+    <section className="welcome-row"><div><p className="welcome-kicker">YOUR PORTFOLIO, YOUR STORY</p><h2>Good to see you again.</h2><p className="muted">Edit content here. Published changes sync to the public website through the backend API.</p></div><div className="welcome-icon"><Sparkles size={23}/></div></section>
     <section className="stats-grid">{stats.map(([label,value],i)=><div className="stat-card" key={label}><span>{label}</span><strong>{value}</strong><small>{i===3?"Editable areas":"Currently published"}</small></div>)}</section>
     <section className="editor-card"><div className="editor-heading"><div><span className="eyebrow">CONTENT EDITOR</span><h2>{selected.label}</h2><p>{selected.description}</p></div><div className="editor-badge"><FileText size={15}/> JSON editor</div></div><div className="editor-tools"><span><i className="live-dot"/> Editing <b>{selected.key}</b></span><button className="ghost-btn" onClick={()=>setDraft(pretty(content[active] ?? fallback[active]))}><RefreshCw size={14}/> Reset draft</button></div>
     <div className="upload-panel"><div><strong><Upload size={15}/> Cloudinary image upload</strong><p>Upload a portfolio image securely (max 10 MB). Then copy the secure URL into the image field in this section's JSON.</p></div><label className="ghost-btn upload-label"><Upload size={14}/>{uploading ? "Uploading…" : "Choose image"}<input type="file" accept="image/*" onChange={uploadImage} disabled={uploading} hidden/></label></div>
     {uploadedUrl && <div className="uploaded-url"><input aria-label="Uploaded image URL" readOnly value={uploadedUrl}/><button className="ghost-btn" onClick={copyUploadedUrl}><Copy size={14}/> Copy URL</button></div>}
     {uploadError && <div className="notice error">{uploadError}</div>}
     <textarea className="code-editor" spellCheck="false" value={draft} onChange={e=>setDraft(e.target.value)} aria-label={`${selected.label} JSON editor`}/><div className="editor-footer"><span className="muted">Use valid JSON. Keep the existing field names to preserve the public layout.</span><button className="primary-btn" disabled={busy} onClick={saveSection}><Save size={16}/>{busy?"Saving…":"Save changes"}</button></div>{error && <div className="notice error">{error}</div>}{message && <div className="notice success"><Check size={16}/>{message}</div>}</section>
-    <section className="bottom-grid"><div className="info-card"><div className="info-icon"><ShieldCheck size={18}/></div><div><h3>Secure by design</h3><p>Admin access requires a Firebase custom claim. Firestore rules must also enforce that claim before accepting writes.</p></div></div><div className="info-card"><div className="info-icon"><RefreshCw size={18}/></div><div><h3>Live publishing</h3><p>The public site listens to <code>portfolioContent/main</code> and updates when saved changes arrive.</p></div></div></section>
-    <div className="danger-zone"><div><h3>Initial publishing</h3><p>Use this once to create the main Firestore document from the portfolio's existing local content.</p></div><button className="ghost-btn" disabled={busy} onClick={seedAll}>Publish default content</button></div>
+    <section className="bottom-grid"><div className="info-card"><div className="info-icon"><ShieldCheck size={18}/></div><div><h3>Secure by design</h3><p>Admin access requires a Firebase custom claim. The Express API verifies the Firebase ID token and admin custom claim before accepting writes.</p></div></div><div className="info-card"><div className="info-icon"><RefreshCw size={18}/></div><div><h3>Live publishing</h3><p>The public website reads the latest published content from the Express API and MongoDB.</p></div></div></section>
+    <div className="danger-zone"><div><h3>Initial publishing</h3><p>Use this once to seed MongoDB with the portfolio's existing local content.</p></div><button className="ghost-btn" disabled={busy} onClick={seedAll}>Publish default content</button></div>
     <footer className="admin-footer">© {new Date().getFullYear()} Rokeya Shorna · Private content studio <span>SECURE WORKSPACE</span></footer></main></div>;
 }

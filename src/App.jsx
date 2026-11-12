@@ -18,19 +18,19 @@ import { profile, education, experiences, skills, projects, publications, awards
 
 function PortfolioContentSync({ onUpdate }) {
   useEffect(() => {
-    let unsubscribe;
     let cancelled = false;
-    (async () => {
+    const api = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
+    const refresh = async () => {
       try {
-        const { firebaseConfigured, db } = await import("./lib/firebase");
-        if (!firebaseConfigured || !db || cancelled) return;
-        const { doc, onSnapshot } = await import("firebase/firestore");
-        unsubscribe = onSnapshot(doc(db, "portfolioContent", "main"), (snapshot) => {
-          if (snapshot.exists()) { applyPortfolioData(snapshot.data()); onUpdate(); }
-        }, (error) => console.error("Portfolio content sync failed:", error));
-      } catch (error) { console.warn("Firebase content sync is not configured yet:", error); }
-    })();
-    return () => { cancelled = true; if (unsubscribe) unsubscribe(); };
+        const response = await fetch(`${api}/api/portfolio`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Portfolio API returned ${response.status}`);
+        const result = await response.json();
+        if (!cancelled && result.content) { applyPortfolioData(result.content); onUpdate(); }
+      } catch (error) { console.warn("Could not refresh published portfolio content:", error); }
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, [onUpdate]);
   return null;
 }
@@ -293,13 +293,14 @@ function Contact() {
   async function submit(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
-    const endpoint = import.meta.env.VITE_CONTACT_ENDPOINT;
+    const endpoint = `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/contact`;
     setSending(true);
     if (endpoint) {
       setStatus("Sending…");
       try {
         const response = await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
-        if (!response.ok) throw new Error(`Contact endpoint returned ${response.status}`);
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || `Contact endpoint returned ${response.status}`);
         setStatus("Message sent successfully.");
         e.currentTarget.reset();
       } catch {

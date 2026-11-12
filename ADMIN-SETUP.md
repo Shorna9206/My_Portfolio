@@ -1,82 +1,85 @@
-# Portfolio Admin + Firebase setup
+# Admin, Backend and Database Setup
 
-This repository now contains two separately deployable Vite apps:
+The project contains three separate apps: the public React website (`/`), the private React admin interface (`admin-panel/`), and the Express backend (`backend/`). The two frontends communicate with the backend; MongoDB stores the published portfolio and contact messages.
 
-- Public portfolio: repository root (`npm run dev`, default port 5173)
-- Admin panel: `admin-panel/` (`npm install` then `npm run dev`, port 5174)
+## 1. Firebase Authentication
 
-The admin panel edits the Firestore document `portfolioContent/main`. The public portfolio subscribes to that document and replaces the bundled fallback content when it exists. If Firebase environment variables are absent, the public site continues to use its bundled data.
+1. Open Firebase Console and create/select the project.
+2. Enable Authentication → Sign-in method → **Email/Password** and **Google**.
+3. Configure authorized domains for the deployed Admin Panel.
+4. Create the administrator account in Authentication → Users.
+5. Create a Firebase Web App and copy its config values into both frontend `.env` files.
+6. Download a Firebase service-account JSON for the backend only.
 
-## 1. Firebase project
+Firebase is used for administrator identity. MongoDB is the application database; Firestore is not required for the new API workflow.
 
-1. Open Firebase Console and use/create the Firebase project for this portfolio.
-2. Enable **Authentication → Sign-in method → Email/Password** and **Google**. Configure the authorized domains for your admin deployment in Authentication → Settings → Authorized domains. Password reset uses Firebase’s built-in email action; configure its sender/template in Authentication → Templates.
-3. Create the administrator account in **Authentication → Users → Add user**.
-4. Add a Firebase Web App and copy its config values.
-5. Create Firestore Database.
-6. Deploy `firestore.rules` from this repository (Firebase CLI: `npx firebase-tools deploy --only firestore:rules`, after `npx firebase-tools login` and `npx firebase-tools use <project-id>`).
+## 2. MongoDB Atlas
 
-## 2. Environment variables
+1. Create a MongoDB Atlas cluster and database user.
+2. Allow the backend host IP (or configure the appropriate network access policy).
+3. Copy the connection string and set `MONGODB_URI` in `backend/.env`.
 
-Copy root `.env.example` to `.env` and fill in the Firebase Web App values. Copy `admin-panel/.env.example` to `admin-panel/.env` and fill in the same values plus `VITE_PUBLIC_SITE_URL`. These are public Firebase client config values, not service-account secrets.
+## 3. Environment files
 
-## 3. Grant the admin claim
+Copy `.env.example`, `admin-panel/.env.example`, and `backend/.env.example` to their corresponding `.env` files.
 
-Download a service-account private key from Firebase Console → Project settings → Service accounts. Save it locally as `serviceAccountKey.json` in the repository root. Never commit or upload this file. Then run:
+- Root `.env`: Firebase Web App values and `VITE_API_URL=http://localhost:5000`.
+- `admin-panel/.env`: same Firebase Web App values, `VITE_API_URL=http://localhost:5000`, and `VITE_PUBLIC_SITE_URL`.
+- `backend/.env`: `MONGODB_URI`, `FIREBASE_SERVICE_ACCOUNT_JSON`, Cloudinary credentials, `PORT`, `NODE_ENV`, and `CLIENT_ORIGINS`.
+
+The Firebase service account JSON must be a single-line JSON value. Keep all backend secrets out of frontend variables and Git.
+
+## 4. Grant admin permission
+
+The administrator account must already exist in Firebase Authentication. Save the service-account key locally as `serviceAccountKey.json` in the repository root, then run:
 
 ```bash
 npm install
-node scripts/setAdmin.cjs admin@example.com
+npm run set-admin -- admin@example.com
 ```
 
-The email must already exist in Firebase Authentication. The script preserves any existing custom claims and adds `admin: true`. This applies to both email/password and Google-created accounts. Sign out and sign back in after running it. Remove the service account JSON from your machine when you no longer need it.
+The script preserves existing claims and adds `admin: true`. Sign out and sign back in so Firebase issues a fresh token. Remove the local service-account file when finished; never commit it.
 
-## 4. Run locally
+## 5. Run all three applications
 
-Terminal 1 (public website):
+Install dependencies:
 
 ```bash
 npm install
+npm --prefix admin-panel install
+npm --prefix backend install
+```
+
+Run each command in its own terminal:
+
+```bash
+npm run dev:api
 npm run dev
+npm run dev:admin
 ```
 
-Terminal 2 (admin panel):
+API health check: `http://localhost:5000/api/health`.
 
-```bash
-cd admin-panel
-npm install
-npm run dev
-```
+## 6. First publish
 
-Open the Vite URL shown in the terminal (normally `http://localhost:5174`). Sign in with the account whose admin custom claim has been granted.
+Open the Admin Panel, sign in with the authorized account, and click **Publish default content** once. This creates the main portfolio record in MongoDB. Edit a content section and click **Save changes** to publish. The public site fetches the latest published content from the backend every 15 seconds.
 
-## 5. First publish
+## 7. Cloudinary uploads
 
-In the admin panel, choose **Publish default content** once to create `portfolioContent/main` from the existing portfolio source data. After that, edit a section's JSON and click **Save changes**. The public site updates from Firestore in real time. Keep the field names and data shapes consistent with `src/data/portfolio.js`.
+Create a Cloudinary account and configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in `backend/.env`. The backend signs upload requests after verifying the admin Firebase token. The browser receives only the signed upload parameters; the Cloudinary API secret stays server-side.
 
-## 6. Vercel deployment
+## 8. Deployment
 
-Deploy the public site as one Vercel project with the repository root as Root Directory and build command `npm run build`. Deploy the admin panel as a second Vercel project using the same repository but set Root Directory to `admin-panel`, build command `npm run build`, output directory `dist`. Add the appropriate environment variables to each project.
+Deploy the public app and admin app as separate Vercel projects. Deploy `backend/` as a Node service on Render, Railway, Fly.io or a similar host.
 
-For the admin Vercel project, set `VITE_PUBLIC_SITE_URL` to the public portfolio URL. After changing environment variables, redeploy.
+- Public Vercel project: Root Directory `/`, Build `npm run build`, Output `dist`.
+- Admin Vercel project: Root Directory `admin-panel`, Build `npm run build`, Output `dist`.
+- Backend service: Root Directory `backend`, Install `npm install`, Start `npm start`.
 
-## Notes
+Set `VITE_API_URL` in both Vercel projects to the deployed backend URL. On the backend, set `CLIENT_ORIGINS` to the exact deployed public and admin URLs, comma-separated. Set MongoDB, Firebase service-account and Cloudinary secrets only on the backend service. Redeploy after environment changes.
 
-- Admin permissions are enforced twice: the panel checks the Firebase ID token claim and Firestore rules require `request.auth.token.admin == true` for writes. Hiding the panel alone is not security.
-- `firestore.rules` denies client access to all other collections. If the Firebase project already has rules for other features, merge these rules rather than blindly replacing unrelated rules.
-- The editor intentionally uses JSON for each section so all existing content fields can be edited without losing fields the UI does not yet expose. Invalid JSON is rejected before saving.
+## Security notes
 
-## 7. Secure Cloudinary image uploads
-
-The admin panel includes an image upload control. It uploads images into the `apu-portfolio` Cloudinary folder and returns a `secure_url` to copy into the relevant JSON image field. The server-side signing endpoint lives at `admin-panel/api/cloudinary-signature.js`; it verifies the Firebase ID token and requires the `admin: true` custom claim before signing an upload. The Cloudinary API secret is never sent to the browser.
-
-For the **admin Vercel project only**, add these server-side environment variables in Project Settings → Environment Variables:
-
-- `CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
-- `FIREBASE_SERVICE_ACCOUNT_JSON` — the complete Firebase service-account JSON as a single environment-variable value.
-
-Do not prefix these secrets with `VITE_`, do not put them in the public site's environment, and never commit a service-account key. Redeploy the admin project after setting them. The image-upload API is intended for the deployed Vercel admin project; local Vite dev does not run Vercel serverless functions by itself, so upload testing should be done after deployment or via Vercel's local dev tooling.
-
-The uploader enforces image MIME type and a 10 MB client-side size limit. Configure Cloudinary account upload limits as an additional safeguard. In local development, Vite does not execute the Vercel serverless signing function; test image uploads on the deployed Admin project or run it with the Vercel CLI (`vercel dev`).
+- Frontend route checks are for user experience only. The Express API verifies the Firebase ID token and requires the `admin: true` custom claim on every write/upload-signature request.
+- Public visitors can read published portfolio content and submit contact messages. Contact requests are validated and rate-limited.
+- Do not commit `.env`, service-account keys, MongoDB credentials, or Cloudinary secrets.

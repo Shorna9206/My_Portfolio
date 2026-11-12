@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "dev:admin": "npm --prefix admin-panel run dev",
+    "dev:api": "npm --prefix backend run dev",
+    "start:api": "npm --prefix backend start",
     "build:admin": "npm --prefix admin-panel run build",
     "set-admin": "node scripts/setAdmin.cjs"
   },
