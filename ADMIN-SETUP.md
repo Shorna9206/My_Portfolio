@@ -1,6 +1,6 @@
 # Admin, Backend and Database Setup
 
-The project contains three separate apps: the public React website (`/`), the private React admin interface (`admin-panel/`), and the Express backend (`backend/`). The two frontends communicate with the backend; MongoDB stores the published portfolio and contact messages.
+The project contains three separate apps: the public React website (`frontend/web/`), the private React admin interface (`frontend/admin/`), and the Express backend (`backend/`). The two frontends communicate with the backend; MongoDB stores the published portfolio and contact messages.
 
 ## 1. Firebase Authentication
 
@@ -21,10 +21,10 @@ Firebase is used for administrator identity. MongoDB is the application database
 
 ## 3. Environment files
 
-Copy `.env.example`, `admin-panel/.env.example`, and `backend/.env.example` to their corresponding `.env` files.
+Copy `.env.example`, `frontend/admin/.env.example`, and `backend/.env.example` to their corresponding `.env` files.
 
-- Root `.env`: Firebase Web App values and `VITE_API_URL=http://localhost:5000`.
-- `admin-panel/.env`: same Firebase Web App values, `VITE_API_URL=http://localhost:5000`, and `VITE_PUBLIC_SITE_URL`.
+- `frontend/web/.env`: Firebase Web App values and `VITE_API_URL=http://localhost:5000`.
+- `frontend/admin/.env`: same Firebase Web App values, `VITE_API_URL=http://localhost:5000`, and `VITE_PUBLIC_SITE_URL`.
 - `backend/.env`: `MONGODB_URI`, `FIREBASE_SERVICE_ACCOUNT_JSON`, Cloudinary credentials, `PORT`, `NODE_ENV`, and `CLIENT_ORIGINS`.
 
 The Firebase service account JSON must be a single-line JSON value. Keep all backend secrets out of frontend variables and Git.
@@ -34,7 +34,7 @@ The Firebase service account JSON must be a single-line JSON value. Keep all bac
 The administrator account must already exist in Firebase Authentication. Save the service-account key locally as `serviceAccountKey.json` in the repository root, then run:
 
 ```bash
-npm install
+npm --prefix backend install
 npm run set-admin -- admin@example.com
 ```
 
@@ -45,16 +45,14 @@ The script preserves existing claims and adds `admin: true`. Sign out and sign b
 Install dependencies:
 
 ```bash
-npm install
-npm --prefix admin-panel install
-npm --prefix backend install
+npm run install:all
 ```
 
 Run each command in its own terminal:
 
 ```bash
 npm run dev:api
-npm run dev
+npm run dev:web
 npm run dev:admin
 ```
 
@@ -72,8 +70,8 @@ Create a Cloudinary account and configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_A
 
 Deploy the public app and admin app as separate Vercel projects. Deploy `backend/` as a Node service on Render, Railway, Fly.io or a similar host.
 
-- Public Vercel project: Root Directory `/`, Build `npm run build`, Output `dist`.
-- Admin Vercel project: Root Directory `admin-panel`, Build `npm run build`, Output `dist`.
+- Public Vercel project: Root Directory `frontend/web`, Build `npm run build`, Output `dist`.
+- Admin Vercel project: Root Directory `frontend/admin`, Build `npm run build`, Output `dist`.
 - Backend service: Root Directory `backend`, Install `npm install`, Start `npm start`.
 
 Set `VITE_API_URL` in both Vercel projects to the deployed backend URL. On the backend, set `CLIENT_ORIGINS` to the exact deployed public and admin URLs, comma-separated. Set MongoDB, Firebase service-account and Cloudinary secrets only on the backend service. Redeploy after environment changes.
