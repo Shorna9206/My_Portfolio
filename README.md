@@ -1,116 +1,161 @@
-# Portfolio — Full-stack Monorepo
+# Rokeya Khatun Shorna — Portfolio Monorepo
 
-Three separate applications with the requested structure: two frontends inside `frontend/` and the API in a separate top-level `backend/` folder.
+A separate public portfolio, protected content-management dashboard, and backend API. The public site and admin dashboard are deployed separately on Vercel; the API can be deployed to Render, Railway, Fly.io or another Node host.
+
+## Repository structure
 
 ```text
-Apu-portfolio/
+Rokeya-Khatun-Shorna-Portfolio/
 ├── frontend/
 │   ├── web/       # Public portfolio (React + Vite)
-│   └── admin/     # Separate admin dashboard (React + Vite)
-├── backend/       # Express API, MongoDB, Firebase verification, Cloudinary
-├── package.json   # Root convenience scripts
+│   └── admin/     # Private admin CMS (React + Vite)
+├── backend/       # Express API + Firebase Admin + Cloudinary signing
+├── package.json   # npm workspaces / monorepo scripts
 └── README.md
 ```
 
-The website and admin dashboard are independent interfaces. Both communicate with one Express API and MongoDB database.
+## Portfolio content included
 
-## Stack
-- Frontends: React + Vite
-- API: Node.js + Express
-- Database: MongoDB Atlas + Mongoose
-- Authentication: Firebase Authentication; API verifies Firebase ID tokens and `admin: true` custom claims
-- Media: Cloudinary signed uploads
+The starter content is based on the supplied Rokeya Shorna portfolio/CV data: profile and contact, M.Sc/B.Sc education, four professional roles, four projects, skills, two publications, awards, workshops, leadership/volunteering, references, coursework and interests. Existing portrait and project illustration assets are retained.
 
-## Requirements
-Node.js 20.19+ (or 22.12+) and npm, MongoDB, Firebase project (Email/Password and Google providers enabled), Firebase service account, and Cloudinary account.
+The home hero now uses a larger, clear portrait aligned on the right. The image URL is editable in Admin → Profile (`image`) and can be replaced using the Cloudinary uploader.
 
-## Install
-Run from repository root:
+## Admin capabilities
+
+- Firebase email/password sign-in, Google sign-in and password reset.
+- Protected API access using Firebase ID tokens and the `admin: true` custom claim.
+- Edit profile/contact, education, experience, projects, skills, publications, awards, workshops, leadership, references, coursework and interests.
+- Upload images through server-signed Cloudinary uploads; paste the returned secure URL into the relevant content field.
+- Visitor message inbox: read, mark as read/unread, and delete enquiries.
+- Publish updates to Firestore; the public website refreshes published content automatically.
+- JSON editor validates object/array structure before saving. Keep field names consistent with the existing schema.
+
+## Technology
+
+- Public web: React, Vite, React Router, Framer Motion, GSAP, Lenis, Three.js and Lucide.
+- Admin: React, Vite, Firebase Authentication and Lucide.
+- Data: Firebase Firestore (document `portfolioContent/main`).
+- Server: Node.js, Express, Firebase Admin SDK, Helmet, CORS and rate limiting.
+- Images: Cloudinary (signed uploads; API secret remains server-side).
+
+## 1. Requirements
+
+- Node.js 20+ and npm.
+- A Firebase project with Authentication (Email/Password; Google optional) and Firestore enabled.
+- A Firebase Admin service-account JSON.
+- A Cloudinary account.
+
+## 2. Install
+
+From the repository root:
+
 ```bash
 npm run install:all
 ```
-Or install separately:
+
+## 3. Configure environment
+
+Copy the examples:
+
 ```bash
-npm --prefix frontend/web install
-npm --prefix frontend/admin install
-npm --prefix backend install
+cp frontend/web/.env.example frontend/web/.env
+cp frontend/admin/.env.example frontend/admin/.env
+cp backend/.env.example backend/.env
 ```
 
-## Environment files
-Create these files:
-```powershell
-Copy-Item frontend/web/.env.example frontend/web/.env
-Copy-Item frontend/admin/.env.example frontend/admin/.env
-Copy-Item backend/.env.example backend/.env
-```
+On Windows PowerShell use `Copy-Item` instead of `cp`.
 
-### `frontend/web/.env`
-Set Firebase Web App values and `VITE_API_URL=http://localhost:5000`.
+Fill in the Firebase Web App values in both frontend `.env` files. Set:
+- `VITE_API_URL` to `http://localhost:5000` for local development.
+- `VITE_PUBLIC_SITE_URL` in admin to `http://localhost:5173`.
+- `FIREBASE_SERVICE_ACCOUNT_JSON` in `backend/.env` to the complete one-line service-account JSON.
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` in `backend/.env`.
+- `CLIENT_ORIGINS` to the exact public website and admin origins.
 
-### `frontend/admin/.env`
-Set the same Firebase Web App values, plus `VITE_API_URL=http://localhost:5000` and `VITE_PUBLIC_SITE_URL=http://localhost:5173`.
+Never put Firebase service-account JSON or the Cloudinary API secret in either frontend `.env`. Never commit `.env` or service-account files.
 
-### `backend/.env`
-Configure server-only values:
-```env
-PORT=5000
-NODE_ENV=development
-CLIENT_ORIGINS=http://localhost:5173,http://localhost:5174
-MONGODB_URI=mongodb+srv://.../portfolio?retryWrites=true&w=majority
-FIREBASE_SERVICE_ACCOUNT_JSON={...}
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
-```
-Paste Firebase service-account JSON as a single line. Never expose backend secrets in frontend env files or commit them.
+## 4. Create the first administrator
 
-## Run locally (three terminals)
-From repository root:
+1. Create an account through the Admin login screen (or create the user in Firebase Authentication).
+2. From the repository root run:
 
-**Terminal 1 — Backend**
-```bash
-npm run dev:api
-```
-**Terminal 2 — Website**
-```bash
-npm run dev:web
-```
-**Terminal 3 — Admin**
-```bash
-npm run dev:admin
-```
-
-URLs: Website `http://localhost:5173`, Admin `http://localhost:5174`, API health `http://localhost:5000/api/health`.
-
-## Grant administrator access
-1. Sign up/sign in once through Admin using Firebase Authentication.
-2. Save a Firebase service-account key as `backend/serviceAccountKey.json` (never commit it).
-3. Run from repository root:
 ```bash
 npm run set-admin -- admin@example.com
 ```
-4. Sign out and sign in again to refresh the ID token.
 
-Every write endpoint verifies the Firebase token and server-side `admin: true` claim.
+3. Sign out and sign in again so Firebase refreshes the ID token with the admin claim.
 
-## API endpoints
+The command uses `backend/.env` and Firebase Admin SDK. Only users with `admin: true` can publish content or access the message inbox.
+
+## 5. Run locally
+
+Open three terminals from the repository root:
+
+```bash
+npm run dev:api
+npm run dev:web
+npm run dev:admin
+```
+
+- Public website: http://localhost:5173
+- Admin dashboard: http://localhost:5174
+- API health: http://localhost:5000/api/health
+
+## 6. Firestore data model
+
+- `portfolioContent/main` — published portfolio content object.
+- `contactMessages/{messageId}` — public contact form submissions.
+- `admins/{uid}` — administrator metadata written by the set-admin script.
+
+The API uses Firebase Admin SDK, so browser Firestore rules can deny direct client access. The included `frontend/web/firestore.rules` denies all direct client reads/writes; deploy those rules if the web app is not using any direct Firestore features.
+
+## 7. API routes
+
 | Method | Route | Access | Purpose |
 |---|---|---|---|
-| GET | `/api/health` | Public | API/database health |
-| GET | `/api/portfolio` | Public | Read published content |
-| PUT | `/api/portfolio` | Admin | Publish portfolio content |
-| POST | `/api/media/signature` | Admin | Signed Cloudinary upload params |
-| POST | `/api/contact` | Public, rate-limited | Save contact message |
+| GET | `/api/health` | Public | API/Firebase configuration status |
+| GET | `/api/portfolio` | Public | Read published portfolio content |
+| PUT | `/api/portfolio` | Admin claim | Publish portfolio content |
+| POST | `/api/media/signature` | Admin claim | Create signed Cloudinary upload parameters |
+| POST | `/api/contact` | Public, rate-limited | Save contact enquiry to Firestore |
+| GET | `/api/messages` | Admin claim | List recent contact messages |
+| PATCH | `/api/messages/:id` | Admin claim | Mark message read/unread/archived |
+| DELETE | `/api/messages/:id` | Admin claim | Delete a contact message |
 
-## Deploy
-- Website: Vercel Root Directory `frontend/web`; Build `npm run build`; Output `dist`.
-- Admin: Vercel Root Directory `frontend/admin`; Build `npm run build`; Output `dist`.
-- Backend: Render/Railway/Fly.io Root Directory `backend`; Build `npm install`; Start `npm start`.
+## 8. Deployment
 
-Set `VITE_API_URL` on both frontend deployments to the deployed API URL. Set backend `CLIENT_ORIGINS` to the exact deployed frontend domains. Keep MongoDB, Firebase service-account and Cloudinary secrets only on the backend host.
+### Public website — Vercel
+- Root Directory: `frontend/web`
+- Framework: Vite
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Environment: `VITE_API_URL=https://YOUR-BACKEND-DOMAIN`
 
-## Build
+### Admin — Vercel
+- Root Directory: `frontend/admin`
+- Framework: Vite
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Environment: same Firebase Web App values, `VITE_API_URL=https://YOUR-BACKEND-DOMAIN`, and `VITE_PUBLIC_SITE_URL=https://YOUR-WEB-DOMAIN`
+
+### Backend — Render / Railway / Fly.io
+- Root Directory: `backend`
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Add `FIREBASE_SERVICE_ACCOUNT_JSON`, Cloudinary secrets, `PORT`, `NODE_ENV=production`, and `CLIENT_ORIGINS` in the host's secret/environment settings.
+
+After deploying, run the admin-claim script locally using the same Firebase service account and verify `/api/health`.
+
+## 9. Build
+
 ```bash
-npm run build:web
-npm run build:admin
+npm run build
 ```
+
+This builds both frontends. Backend startup requires the configured Firebase service-account JSON.
+
+## Security notes
+
+- The uploaded reference admin archive contained a populated `.env` and a valid Firebase service-account private key. Those files are intentionally not copied into this deliverable. If that archive was shared or stored anywhere outside your private machine, revoke/rotate that Firebase service-account key and replace it in your secure backend environment.
+- Firebase client config is public app configuration; service-account JSON and Cloudinary API secret are private server credentials.
+- Keep Firestore rules restrictive and grant admin claims only to trusted accounts.

@@ -1,5 +1,5 @@
 {
-  "name": "portfolio-fullstack",
+  "name": "rokeya-khatun-shorna-portfolio",
   "private": true,
   "version": "1.0.0",
   "scripts": {
@@ -9,6 +9,7 @@
     "dev:api": "npm --prefix backend run dev",
     "build:web": "npm --prefix frontend/web run build",
     "build:admin": "npm --prefix frontend/admin run build",
+    "build": "npm run build:web && npm run build:admin",
     "start:api": "npm --prefix backend start",
     "set-admin": "npm --prefix backend run set-admin --"
   }

@@ -1,6 +1,7 @@
 export let profile = {
   name: "Rokeya Khatun Shorna",
   shortName: "Rokeya Shorna",
+  image: "/assets/profile.png",
   role: "Researcher • Programmer • Web Developer",
   email: "rokeyashorna5@gmail.com",
   phone: "+880 1788179121",

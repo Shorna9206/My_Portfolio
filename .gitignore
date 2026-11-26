@@ -4,12 +4,6 @@ dist/
 .env.*
 !.env.example
 serviceAccountKey.json
-frontend/web/node_modules/
-frontend/web/dist/
-frontend/admin/node_modules/
-frontend/admin/dist/
-backend/node_modules/
-backend/.env
-backend/.env.*
-!backend/.env.example
+**/serviceAccountKey.json
 npm-debug.log*
+.DS_Store

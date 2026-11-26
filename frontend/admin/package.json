@@ -1,5 +1,5 @@
 {
-  "name": "portfolio-admin",
+  "name": "apu-portfolio-admin",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -14,8 +14,7 @@
     "lucide-react": "^0.468.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "vite": "^7.1.2",
-    "firebase-admin": "^13.5.0"
+    "vite": "^7.1.2"
   },
   "devDependencies": {}
 }

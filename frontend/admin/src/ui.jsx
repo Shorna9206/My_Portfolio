@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, signOut } from "firebase/auth";
-import { Activity, BookOpen, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, RefreshCw, Save, ShieldCheck, Sparkles, Users, Wrench, Upload, Copy } from "lucide-react";
-import * as defaults from "../../src/data/portfolio.js";
+import { Activity, BookOpen, BriefcaseBusiness, Check, ChevronRight, CircleUserRound, ExternalLink, FileText, GraduationCap, LayoutDashboard, LogOut, RefreshCw, Save, ShieldCheck, Sparkles, Users, Wrench, Upload, Copy, MessageSquare, Trash2, MailCheck } from "lucide-react";
+import * as defaults from "./data/portfolio.js";
 import { auth, configured } from "./firebase";
 
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
@@ -45,8 +45,9 @@ export default function AdminApp() {
   const [lastSaved, setLastSaved] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState("");
+  const [messages, setMessages] = useState([]);
   const [uploadError, setUploadError] = useState("");
-  const selected = SECTIONS.find(s => s.key === active) || SECTIONS[0];
+  const selected = active === "messages" ? { key: "messages", label: "Messages", type: "messages", description: "Read, archive and remove visitor enquiries." } : (SECTIONS.find(s => s.key === active) || SECTIONS[0]);
 
   useEffect(() => {
     if (!configured) { setAuthReady(true); return; }
@@ -66,6 +67,11 @@ export default function AdminApp() {
     let cancelled = false;
     (async () => {
       try {
+        if (active === "messages") {
+          const inbox = await apiRequest("/api/messages", {}, user);
+          if (!cancelled) setMessages(inbox.messages || []);
+          return;
+        }
         const remote = await apiRequest("/api/portfolio", {}, user);
         if (cancelled) return;
         const next = { ...fallback, ...(remote.content || {}) };
@@ -80,7 +86,7 @@ export default function AdminApp() {
     ["Publications", (content.publications || []).length], ["Content sections", SECTIONS.length]
   ], [content]);
 
-  function selectSection(key) { setActive(key); setDraft(pretty(content[key] ?? fallback[key])); setMessage(""); setError(""); }
+  function selectSection(key) { setActive(key); setDraft(key === "messages" ? "[]" : pretty(content[key] ?? fallback[key])); setMessage(""); setError(""); }
   async function login(e) {
     e.preventDefault(); setBusy(true); setError(""); setMessage("");
     try { await signInWithEmailAndPassword(auth, email.trim(), password); setPassword(""); }
@@ -109,7 +115,28 @@ export default function AdminApp() {
       setError(e.code === "auth/user-not-found" ? "No administrator account was found for that email." : (e.message || "Could not send the reset email."));
     } finally { setBusy(false); }
   }
+  async function updateMessage(id, status) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await apiRequest(`/api/messages/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }, user);
+      setMessages(current => current.map(item => item.id === id ? { ...item, status } : item));
+      setMessage("Message status updated.");
+    } catch (e) { setError(e.message || "Could not update message."); }
+    finally { setBusy(false); }
+  }
+  async function deleteMessage(id) {
+    if (!window.confirm("Delete this message permanently?")) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await apiRequest(`/api/messages/${id}`, { method: "DELETE" }, user);
+      setMessages(current => current.filter(item => item.id !== id));
+      setMessage("Message deleted.");
+    } catch (e) { setError(e.message || "Could not delete message."); }
+    finally { setBusy(false); }
+  }
+
   async function saveSection() {
+    if (active === "messages") return;
     setError(""); setMessage("");
     let parsed;
     try { parsed = JSON.parse(draft); } catch { setError("JSON format is invalid. Fix the syntax before saving."); return; }
@@ -163,7 +190,7 @@ export default function AdminApp() {
     const ok = window.confirm("Publish the portfolio bundled default content to the API database? This overwrites all editable sections with the current source values.");
     if (!ok) return;
     setBusy(true); setError("");
-    try { await apiRequest("/api/portfolio", { method: "PUT", body: JSON.stringify({ content: fallback }) }, user); setContent(fallback); setDraft(pretty(fallback[active])); setMessage("Default portfolio content published to MongoDB."); }
+    try { await apiRequest("/api/portfolio", { method: "PUT", body: JSON.stringify({ content: fallback }) }, user); setContent(fallback); setDraft(pretty(fallback[active])); setMessage("Default portfolio content published to Firebase Firestore."); }
     catch (e) { setError(`Publish failed: ${e.message}`); }
     finally { setBusy(false); }
   }
@@ -172,16 +199,17 @@ export default function AdminApp() {
   if (!authReady) return <div className="loading-screen"><div className="spinner"/> Verifying session…</div>;
   if (!user || !authorized) return <div className="login-screen"><div className="login-art"><div className="orb orb-one"/><div className="orb orb-two"/><div className="login-copy"><span className="eyebrow">ROKEYA SHORNA / DIGITAL SPACE</span><h1>Make your work<br/><em>tell its story.</em></h1><p>A private workspace to keep your portfolio accurate, current and entirely yours.</p><div className="login-foot"><ShieldCheck size={15}/> Protected by Firebase Authentication + admin claims</div></div></div><form className="login-card" onSubmit={login}><div className="brand-mark">RS</div><span className="eyebrow">CONTENT STUDIO</span><h2>Welcome back.</h2><p className="muted">Sign in with your authorized administrator account.</p><label>Email address<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password"/></label><button type="button" className="text-action" onClick={resetPassword} disabled={busy}>Forgot password?</button>{error && <div className="notice error">{error}</div>}{message && <div className="notice success">{message}</div>}<button className="primary-btn full" disabled={busy}>{busy ? "Signing in…" : "Sign in securely"}<ChevronRight size={17}/></button><div className="login-divider"><span>OR</span></div><button type="button" className="ghost-btn full google-login" disabled={busy} onClick={googleLogin}><b>G</b> Continue with Google</button><p className="login-note">Access is restricted to accounts with the Firebase <code>admin: true</code> custom claim. Google accounts must also be granted this claim.</p></form></div>;
 
-  return <div className="admin-shell"><aside className="sidebar"><a className="brand" href="#top"><span className="brand-mark">RS</span><span><b>SHORNA</b><small>PORTFOLIO STUDIO</small></span></a><div className="side-label">WORKSPACE</div><button className={`nav-item ${active === "dashboard" ? "active" : ""}`} onClick={()=>selectSection("profile")}><LayoutDashboard size={17}/> Overview</button><div className="side-label">CONTENT MANAGEMENT</div>{SECTIONS.map(item=>{const Icon=item.icon;return <button key={item.key} className={`nav-item ${active===item.key?"active":""}`} onClick={()=>selectSection(item.key)}><Icon size={17}/><span>{item.label}</span>{active===item.key&&<span className="nav-dot"/>}</button>})}<div className="sidebar-bottom"><div className="user-chip"><span className="avatar">{(user.email||"A")[0].toUpperCase()}</span><span><b>{user.email}</b><small>Administrator</small></span></div><button className="nav-item logout" onClick={()=>signOut(auth)}><LogOut size={17}/> Sign out</button></div></aside>
+  return <div className="admin-shell"><aside className="sidebar"><a className="brand" href="#top"><span className="brand-mark">RS</span><span><b>SHORNA</b><small>PORTFOLIO STUDIO</small></span></a><div className="side-label">WORKSPACE</div><button className={`nav-item ${active === "dashboard" ? "active" : ""}`} onClick={()=>selectSection("profile")}><LayoutDashboard size={17}/> Overview</button><div className="side-label">CONTENT MANAGEMENT</div>{SECTIONS.map(item=>{const Icon=item.icon;return <button key={item.key} className={`nav-item ${active===item.key?"active":""}`} onClick={()=>selectSection(item.key)}><Icon size={17}/><span>{item.label}</span>{active===item.key&&<span className="nav-dot"/>}</button>})}<button className={`nav-item ${active==="messages"?"active":""}`} onClick={()=>selectSection("messages")}><MessageSquare size={17}/><span>Messages</span>{active==="messages"&&<span className="nav-dot"/>}</button><div className="sidebar-bottom"><div className="user-chip"><span className="avatar">{(user.email||"A")[0].toUpperCase()}</span><span><b>{user.email}</b><small>Administrator</small></span></div><button className="nav-item logout" onClick={()=>signOut(auth)}><LogOut size={17}/> Sign out</button></div></aside>
     <main className="main-area" id="top"><header className="topbar"><div><span className="eyebrow">CONTENT MANAGEMENT / LIVE</span><h1>{selected.label}</h1></div><div className="top-actions"><a className="ghost-btn" href={import.meta.env.VITE_PUBLIC_SITE_URL || "https://example.com"} target="_blank" rel="noreferrer"><ExternalLink size={15}/> View website</a><span className="status-pill"><i/> Connected</span></div></header>
     <section className="welcome-row"><div><p className="welcome-kicker">YOUR PORTFOLIO, YOUR STORY</p><h2>Good to see you again.</h2><p className="muted">Edit content here. Published changes sync to the public website through the backend API.</p></div><div className="welcome-icon"><Sparkles size={23}/></div></section>
     <section className="stats-grid">{stats.map(([label,value],i)=><div className="stat-card" key={label}><span>{label}</span><strong>{value}</strong><small>{i===3?"Editable areas":"Currently published"}</small></div>)}</section>
-    <section className="editor-card"><div className="editor-heading"><div><span className="eyebrow">CONTENT EDITOR</span><h2>{selected.label}</h2><p>{selected.description}</p></div><div className="editor-badge"><FileText size={15}/> JSON editor</div></div><div className="editor-tools"><span><i className="live-dot"/> Editing <b>{selected.key}</b></span><button className="ghost-btn" onClick={()=>setDraft(pretty(content[active] ?? fallback[active]))}><RefreshCw size={14}/> Reset draft</button></div>
+    {active === "messages" ? <section className="editor-card"><div className="editor-heading"><div><span className="eyebrow">VISITOR INBOX</span><h2>Messages</h2><p>Contact submissions saved securely in Firebase Firestore.</p></div><div className="editor-badge"><MessageSquare size={15}/> {messages.length} messages</div></div>{messages.length ? <div className="message-list">{messages.map(item=><article className="message-item" key={item.id}><div className="message-top"><div><b>{item.name || "Visitor"}</b><span>{item.email}</span></div><span className={`message-status ${item.status || "unread"}`}>{item.status || "unread"}</span></div><h3>{item.subject || "No subject"}</h3><p>{item.message}</p><div className="message-actions"><button className="ghost-btn" onClick={()=>updateMessage(item.id,(item.status||"unread")==="unread"?"read":"unread")} disabled={busy}><MailCheck size={14}/>{(item.status||"unread")==="unread"?"Mark as read":"Mark unread"}</button><button className="ghost-btn danger-action" onClick={()=>deleteMessage(item.id)} disabled={busy}><Trash2 size={14}/>Delete</button></div></article>)}</div> : <div className="empty-inbox"><MessageSquare size={30}/><h3>No messages yet</h3><p>New enquiries from the public contact form will appear here.</p></div>}{error && <div className="notice error">{error}</div>}{message && <div className="notice success"><Check size={16}/>{message}</div>}</section> :     <section className="editor-card"><div className="editor-heading"><div><span className="eyebrow">CONTENT EDITOR</span><h2>{selected.label}</h2><p>{selected.description}</p></div><div className="editor-badge"><FileText size={15}/> JSON editor</div></div><div className="editor-tools"><span><i className="live-dot"/> Editing <b>{selected.key}</b></span><button className="ghost-btn" onClick={()=>setDraft(pretty(content[active] ?? fallback[active]))}><RefreshCw size={14}/> Reset draft</button></div>
     <div className="upload-panel"><div><strong><Upload size={15}/> Cloudinary image upload</strong><p>Upload a portfolio image securely (max 10 MB). Then copy the secure URL into the image field in this section's JSON.</p></div><label className="ghost-btn upload-label"><Upload size={14}/>{uploading ? "Uploading…" : "Choose image"}<input type="file" accept="image/*" onChange={uploadImage} disabled={uploading} hidden/></label></div>
     {uploadedUrl && <div className="uploaded-url"><input aria-label="Uploaded image URL" readOnly value={uploadedUrl}/><button className="ghost-btn" onClick={copyUploadedUrl}><Copy size={14}/> Copy URL</button></div>}
     {uploadError && <div className="notice error">{uploadError}</div>}
     <textarea className="code-editor" spellCheck="false" value={draft} onChange={e=>setDraft(e.target.value)} aria-label={`${selected.label} JSON editor`}/><div className="editor-footer"><span className="muted">Use valid JSON. Keep the existing field names to preserve the public layout.</span><button className="primary-btn" disabled={busy} onClick={saveSection}><Save size={16}/>{busy?"Saving…":"Save changes"}</button></div>{error && <div className="notice error">{error}</div>}{message && <div className="notice success"><Check size={16}/>{message}</div>}</section>
-    <section className="bottom-grid"><div className="info-card"><div className="info-icon"><ShieldCheck size={18}/></div><div><h3>Secure by design</h3><p>Admin access requires a Firebase custom claim. The Express API verifies the Firebase ID token and admin custom claim before accepting writes.</p></div></div><div className="info-card"><div className="info-icon"><RefreshCw size={18}/></div><div><h3>Live publishing</h3><p>The public website reads the latest published content from the Express API and MongoDB.</p></div></div></section>
-    <div className="danger-zone"><div><h3>Initial publishing</h3><p>Use this once to seed MongoDB with the portfolio's existing local content.</p></div><button className="ghost-btn" disabled={busy} onClick={seedAll}>Publish default content</button></div>
+ }
+    <section className="bottom-grid"><div className="info-card"><div className="info-icon"><ShieldCheck size={18}/></div><div><h3>Secure by design</h3><p>Admin access requires a Firebase custom claim. The Express API verifies the Firebase ID token and admin custom claim before accepting writes.</p></div></div><div className="info-card"><div className="info-icon"><RefreshCw size={18}/></div><div><h3>Live publishing</h3><p>The public website reads published portfolio content from Firebase Firestore through the protected API.</p></div></div></section>
+    <div className="danger-zone"><div><h3>Initial publishing</h3><p>Use this once to seed Firebase Firestore with the portfolio's existing local content.</p></div><button className="ghost-btn" disabled={busy} onClick={seedAll}>Publish default content</button></div>
     <footer className="admin-footer">© {new Date().getFullYear()} Rokeya Shorna · Private content studio <span>SECURE WORKSPACE</span></footer></main></div>;
 }

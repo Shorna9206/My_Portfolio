@@ -1,12 +1,12 @@
 {
-  "name": "portfolio-web",
+  "name": "shorna-premium-portfolio",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.6",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.2",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "firebase-admin": "^13.5.0"
   }
 }

@@ -112,7 +112,7 @@ function Home() {
         <div className="hero-visual" data-reveal="right">
           <motion.div className="portrait-card" animate={{ y: [0, -14, 0], rotate: [2, -1, 2] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
             <div className="portrait-glow"/>
-            <img src="/assets/profile.png" alt={profile.shortName || profile.name || "Portfolio profile"}/>
+            <img src={profile.image || "/assets/profile.png"} alt={profile.shortName || profile.name || "Portfolio profile"}/>
             <div className="portrait-meta"><span>{(profile.shortName || profile.name || "ROKEYA SHORNA").toUpperCase()}</span><small>{profile.role || "AI • WEB • RESEARCH"}</small></div>
           </motion.div>
           <div className="visual-orb" data-parallax="-40"><ThreeOrb/></div>
@@ -200,7 +200,7 @@ function About() {
         transition={{ type: "spring", stiffness: 120, damping: 14 }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        <img src="/assets/profile.png" alt={profile.shortName || profile.name || "Portfolio profile"}/>
+        <img src={profile.image || "/assets/profile.png"} alt={profile.shortName || profile.name || "Portfolio profile"}/>
         <div><span>{(profile.shortName || profile.name || "ROKEYA SHORNA").toUpperCase()}</span><small>{profile.role || "Computer Science & Engineering"}</small></div>
       </motion.div>
     </motion.div>
@@ -292,7 +292,8 @@ function Contact() {
   const [sending,setSending] = useState(false);
   async function submit(e) {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.currentTarget));
+    const form = e.currentTarget;
+    const data = Object.fromEntries(new FormData(form));
     const endpoint = `${(import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "")}/api/contact`;
     setSending(true);
     if (endpoint) {
@@ -302,7 +303,7 @@ function Contact() {
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(result.error || `Contact endpoint returned ${response.status}`);
         setStatus("Message sent successfully.");
-        e.currentTarget.reset();
+        form.reset();
       } catch {
         setStatus("Message could not be delivered by the form. Opening your email client instead…");
         openMailFallback(data);
@@ -310,7 +311,7 @@ function Contact() {
     } else {
       setStatus("Opening your email client with this message…");
       openMailFallback(data);
-      e.currentTarget.reset();
+      form.reset();
     }
     setSending(false);
   }
