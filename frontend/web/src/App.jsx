@@ -99,9 +99,9 @@ function Home() {
             initial="hidden" animate="show"
             variants={{ hidden:{}, show:{ transition:{ staggerChildren:0.14, delayChildren:0.15 } } }}
           >
-            <motion.span variants={{hidden:{opacity:0,y:44,rotateX:35},show:{opacity:1,y:0,rotateX:0,transition:{duration:.8,ease:[0.16,1,0.3,1]}}}} style={{display:"block",transformOrigin:"bottom"}}>Ideas into</motion.span>
-            <motion.em variants={{hidden:{opacity:0,y:44,rotateX:35},show:{opacity:1,y:0,rotateX:0,transition:{duration:.8,ease:[0.16,1,0.3,1]}}}} style={{display:"block",transformOrigin:"bottom"}}>intelligent</motion.em>
-            <motion.span variants={{hidden:{opacity:0,y:44,rotateX:35},show:{opacity:1,y:0,rotateX:0,transition:{duration:.8,ease:[0.16,1,0.3,1]}}}} style={{display:"block",transformOrigin:"bottom"}}>experiences.</motion.span>
+            <motion.span variants={{hidden:{opacity:0,y:44,rotateX:25},show:{opacity:1,y:0,rotateX:0,transition:{duration:.8,ease:[0.16,1,0.3,1]}}}} style={{display:"block",transformOrigin:"bottom"}}>Building Digital</motion.span>
+            <motion.em variants={{hidden:{opacity:0,y:44,rotateX:25},show:{opacity:1,y:0,rotateX:0,transition:{duration:.8,ease:[0.16,1,0.3,1]}}}} style={{display:"block",transformOrigin:"bottom"}}>Experiences</motion.em>
+            <motion.span variants={{hidden:{opacity:0,y:44,rotateX:25},show:{opacity:1,y:0,rotateX:0,transition:{duration:.8,ease:[0.16,1,0.3,1]}}}} style={{display:"block",transformOrigin:"bottom"}}>That Matter.</motion.span>
           </motion.h1>
           <motion.p initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.6,delay:.7,ease:"easeOut"}}>{profile.summary}</motion.p>
           <motion.div className="hero-actions" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.6,delay:.85,ease:"easeOut"}}><MagneticButton to="/projects">Explore Work <ArrowUpRight size={15}/></MagneticButton><MagneticButton to="/resume" secondary>View Resume <Download size={15}/></MagneticButton></motion.div>
@@ -110,13 +110,10 @@ function Home() {
           </motion.div>
         </div>
         <div className="hero-visual" data-reveal="right">
-          <motion.div className="portrait-card" animate={{ y: [0, -14, 0], rotate: [2, -1, 2] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
-            <div className="portrait-glow"/>
-            <img src={profile.image || "/assets/profile.png"} alt={profile.shortName || profile.name || "Portfolio profile"}/>
-            <div className="portrait-meta"><span>{(profile.shortName || profile.name || "ROKEYA SHORNA").toUpperCase()}</span><small>{profile.role || "AI • WEB • RESEARCH"}</small></div>
+          <motion.div className="portrait-card portrait-card--editorial" initial={{opacity:0,x:45,scale:.97}} animate={{opacity:1,x:0,scale:1}} transition={{duration:1,ease:[0.16,1,0.3,1],delay:.15}}>
+            <img src={profile.image || "/assets/profile.png"} alt={profile.shortName || profile.name || "Rokeya Khatun Shorna"}/>
           </motion.div>
-          <div className="visual-orb" data-parallax="-40"><ThreeOrb/></div>
-          <motion.span className="orb-label" animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}>SCROLL / EXPLORE</motion.span>
+          <span className="hero-image-caption">ROKEYA KHATUN SHORNA <i> / </i> DHAKA, BANGLADESH</span>
         </div>
       </div>
       <div className="container hero-bottom"><motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>SCROLL TO EXPLORE ↓</motion.span><span>{(profile.location || "Dhaka, Bangladesh").toUpperCase()}</span></div>

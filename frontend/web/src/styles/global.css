@@ -1,5 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root{
   --bg:#07110f;--bg2:#0b1714;--surface:#10211d;--text:#f3f8f6;--muted:#9baaa5;
@@ -95,4 +95,117 @@ body{overflow-x:hidden;background-image:radial-gradient(circle at 15% 20%,rgba(1
  .hero-visual{height:420px}
  .portrait-card{width:94%;border-radius:125px 125px 14px 14px}
  .hero-actions{flex-wrap:wrap}
+}
+
+
+/* Editorial hero redesign — Nayeem-style split layout, Shorna's existing emerald palette */
+.hero{
+  min-height:100svh;
+  padding:104px 0 68px;
+  align-items:stretch;
+  background:var(--bg);
+}
+.hero-grid{background-size:92px 92px;opacity:.16;mask-image:linear-gradient(to bottom,transparent,black 18%,black 82%,transparent)}
+.hero-glow{width:58vw;height:58vw;right:-16vw;top:4vh;opacity:.7}
+.hero-inner{
+  width:min(1240px,calc(100% - 64px));
+  display:grid;
+  grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr);
+  align-items:center;
+  gap:clamp(34px,5vw,82px);
+  min-height:calc(100svh - 172px);
+}
+.hero-copy{padding:0;max-width:690px;z-index:3}
+.hero-eyebrow{font-size:.72rem;letter-spacing:.16em;text-transform:none;color:var(--accent)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-weight:600;
+  font-size:clamp(3.65rem,6.2vw,6.25rem);
+  line-height:.99;
+  letter-spacing:-.055em;
+  margin:27px 0 28px;
+  max-width:780px;
+}
+.hero h1 span,.hero h1 em{font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:-.055em}
+.hero h1 em{color:var(--accent)}
+.hero-copy>p{max-width:590px;font-size:1.02rem;line-height:1.8;color:var(--muted)}
+.hero-actions{margin-top:30px;gap:13px}
+.magnetic-btn{border-radius:3px;padding:14px 20px;min-height:48px}
+.magnetic-btn.secondary{border-radius:3px}
+.hero-mini-stats{margin-top:34px;gap:38px}
+.hero-mini-stats strong{font-family:"Fraunces",Georgia,serif;font-size:1.65rem;font-weight:600}
+.hero-mini-stats span{font-size:.62rem;letter-spacing:.05em}
+.hero-visual{
+  position:relative;
+  width:100%;
+  height:min(76vh,760px);
+  min-height:570px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  isolation:isolate;
+}
+.portrait-card--editorial{
+  position:relative;
+  width:min(100%,560px);
+  height:100%;
+  max-height:760px;
+  padding:0;
+  margin:0;
+  overflow:hidden;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  transform:none;
+}
+.portrait-card--editorial:hover{transform:none;box-shadow:none}
+.portrait-card--editorial img{
+  display:block;
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:center 24%;
+  border-radius:0;
+  filter:saturate(.9) contrast(1.02);
+  -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 17%,#000 100%);
+  mask-image:linear-gradient(to right,transparent 0%,#000 17%,#000 100%);
+}
+.hero-image-caption{
+  position:absolute;right:2px;bottom:2px;z-index:3;
+  color:var(--muted);font-size:.56rem;letter-spacing:.19em;
+}
+.hero-image-caption i{font-style:normal;color:var(--accent);padding:0 6px}
+.hero-bottom{z-index:5;bottom:23px}
+/* Keep the same emerald palette in both themes; the image remains prominent in light mode too. */
+:root[data-theme="light"] .hero{background:var(--bg)}
+:root[data-theme="light"] .hero-grid{opacity:.12}
+:root[data-theme="light"] .hero-glow{opacity:.34}
+:root[data-theme="light"] .portrait-card--editorial img{filter:saturate(.92) contrast(1.01)}
+@media(max-width:1050px){
+ .hero-inner{grid-template-columns:minmax(0,1fr) minmax(330px,.82fr);gap:26px}
+ .hero h1{font-size:clamp(3.35rem,6.4vw,5.4rem)}
+ .hero-visual{min-height:500px;height:65vh}
+}
+@media(max-width:800px){
+ .hero{padding:108px 0 76px;min-height:0}
+ .hero-inner{width:min(100% - 40px,680px);grid-template-columns:1fr;gap:25px;min-height:0}
+ .hero-copy{padding:0;max-width:100%}
+ .hero h1{font-size:clamp(3.35rem,10vw,5.4rem);margin:20px 0 22px;line-height:1.01}
+ .hero-copy>p{max-width:650px}
+ .hero-visual{height:clamp(420px,105vw,650px);min-height:0;max-width:620px;margin:0 auto;justify-content:center}
+ .portrait-card--editorial{width:100%;max-width:560px}
+ .hero-image-caption{right:10px;bottom:8px}
+ .hero-bottom{position:relative;left:auto;transform:none;bottom:auto;width:min(100% - 40px,680px);margin:22px auto 0}
+}
+@media(max-width:520px){
+ .hero{padding-top:100px}
+ .hero-inner{width:calc(100% - 32px)}
+ .hero h1{font-size:clamp(3rem,12vw,4.35rem)}
+ .hero-copy>p{font-size:.94rem;line-height:1.7}
+ .hero-actions{flex-wrap:wrap;margin-top:24px}
+ .hero-mini-stats{gap:23px;margin-top:27px}
+ .hero-mini-stats strong{font-size:1.35rem}
+ .hero-visual{height:clamp(390px,112vw,520px)}
+ .hero-image-caption{font-size:.48rem;letter-spacing:.12em}
+ .hero-bottom{width:calc(100% - 32px);font-size:.48rem}
 }
