@@ -15,6 +15,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "firebase-admin": "^13.5.0",
-    "helmet": "^8.0.0"
+    "helmet": "^8.0.0",
+    "rokeya-khatun-shorna-portfolio": "file:.."
   }
 }
