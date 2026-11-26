@@ -159,6 +159,3 @@ This builds both frontends. Backend startup requires the configured Firebase ser
 - The uploaded reference admin archive contained a populated `.env` and a valid Firebase service-account private key. Those files are intentionally not copied into this deliverable. If that archive was shared or stored anywhere outside your private machine, revoke/rotate that Firebase service-account key and replace it in your secure backend environment.
 - Firebase client config is public app configuration; service-account JSON and Cloudinary API secret are private server credentials.
 - Keep Firestore rules restrictive and grant admin claims only to trusted accounts.
-
-## Latest visual update
-The home hero has been revised to follow the requested split-screen editorial direction: large serif headline on the left, a much larger right-side portrait, restrained motion, and the existing emerald/mint colour system preserved in both dark and light themes. The portrait is no longer presented inside the narrow floating arch/card treatment.
