@@ -110,7 +110,7 @@ function Home() {
           </motion.div>
         </div>
         <div className="hero-visual" data-reveal="right">
-          <motion.div className="portrait-card" animate={{ y: [0, -14, 0], rotate: [2, -1, 2] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
+          <motion.div className="portrait-card" animate={{ y: [0, -8, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}>
             <div className="portrait-glow"/>
             <img src={profile.image || "/assets/profile.png"} alt={profile.shortName || profile.name || "Portfolio profile"}/>
             <div className="portrait-meta"><span>{(profile.shortName || profile.name || "ROKEYA SHORNA").toUpperCase()}</span><small>{profile.role || "AI • WEB • RESEARCH"}</small></div>
