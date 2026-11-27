@@ -1,9 +1,20 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial } from "@react-three/drei";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 function Orb() {
   const ref = useRef();
+  const materialRef = useRef();
+  useEffect(() => {
+    const applyTheme = () => {
+      const isLight = document.documentElement.dataset.theme === "light";
+      materialRef.current?.color.set(isLight ? "#94613f" : "#c99a70");
+    };
+    applyTheme();
+    const observer = new MutationObserver(applyTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
   useFrame((state) => {
     ref.current.rotation.x = state.clock.elapsedTime * .12;
     ref.current.rotation.y = state.clock.elapsedTime * .18;
@@ -11,7 +22,7 @@ function Orb() {
   return <Float speed={1.3} rotationIntensity={.4} floatIntensity={1.2}>
     <mesh ref={ref} scale={2.05}>
       <icosahedronGeometry args={[1, 5]} />
-      <MeshDistortMaterial color="#8ee6c1" roughness=".22" metalness=".75" distort={.34} speed={1.5} />
+      <MeshDistortMaterial ref={materialRef} color="#c99a70" roughness=".22" metalness=".55" distort={.34} speed={1.5} />
     </mesh>
   </Float>;
 }

@@ -108,7 +108,7 @@ function Home() {
         </div>
         <div className="hero-visual" data-reveal="right">
           <div className="hero-photo">
-            <img src="/assets/hero-profile.jpg" alt={profile.shortName || profile.name || "Portfolio profile"}/>
+            <img src={profile.heroImage || "/assets/hero-profile.jpg"} alt={profile.shortName || profile.name || "Portfolio profile"}/>
           </div>
           <div className="hero-side-rail">
             <div className="hero-side-stat"><span>ACADEMIC</span><strong>{resultNumber(bachelors).toFixed(2)}</strong><small>B.Sc CGPA</small></div>
@@ -342,7 +342,16 @@ export default function App() {
   const notifyRef = useRef(() => {});
   notifyRef.current = () => setContentVersion((v) => v + 1);
   const stableNotify = useRef((...args) => notifyRef.current(...args)).current;
-  const [theme,setTheme] = useState(localStorage.getItem("theme") || "dark");
-  useEffect(()=>{ document.documentElement.dataset.theme = theme; localStorage.setItem("theme",theme); },[theme]);
+  const [theme,setTheme] = useState(() => {
+    try { return localStorage.getItem("theme") === "light" ? "light" : "dark"; }
+    catch { return "dark"; }
+  });
+  useEffect(()=>{
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    try { localStorage.setItem("theme",theme); } catch {}
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.setAttribute("content", theme === "dark" ? "#160f0c" : "#f5f0e9");
+  },[theme]);
   return <><PortfolioContentSync onUpdate={stableNotify}/><Layout theme={theme} setTheme={setTheme}/></>;
 }

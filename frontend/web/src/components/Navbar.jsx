@@ -19,7 +19,7 @@ export default function Navbar({ theme, setTheme }) {
           <Link className="nav-resume" to="/resume">Resume <ArrowUpRight size={14}/></Link>
           <motion.button
             className="icon-btn"
-            aria-label="Toggle theme"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.88, rotate: 180 }}

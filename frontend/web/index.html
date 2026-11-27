@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#160f0c" />
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("theme");
+        document.documentElement.dataset.theme = savedTheme === "light" ? "light" : "dark";
+      } catch {
+        document.documentElement.dataset.theme = "dark";
+      }
+    </script>
     <meta name="description" content="Rokeya Khatun Shorna — researcher, programmer and web developer." />
     <meta property="og:title" content="Rokeya Khatun Shorna — Portfolio" />
     <meta property="og:description" content="Researcher, programmer and web developer working across AI, machine learning, digital image processing and web technologies." />
